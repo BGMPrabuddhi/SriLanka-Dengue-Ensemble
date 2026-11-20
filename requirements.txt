@@ -1,5 +1,7 @@
 # Runtime dependencies (used by the Streamlit app AND needed to unpickle the saved models).
-# Pinned versions tested on Python 3.12 locally; all have wheels for Python 3.11 (Streamlit Cloud).
+# Models are trained on Python 3.12 with these exact versions. On Streamlit Community Cloud,
+# choose Python 3.12 under "Advanced settings" so the saved joblib models load identically.
+# numpy / scikit-learn / xgboost / lightgbm / catboost / joblib MUST match training versions.
 numpy==1.26.4
 pandas==2.2.3
 scikit-learn==1.5.2

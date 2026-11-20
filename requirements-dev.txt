@@ -1,4 +1,10 @@
 # Extra tools for data collection, notebooks and explainability (not needed by the deployed app).
+#
+# IMPORTANT: the line below pulls in requirements.txt UNCHANGED, so numpy, scikit-learn,
+# xgboost, lightgbm, catboost and joblib are pinned to the EXACT same versions used by the
+# deployed Streamlit app. Pickled/joblib models can fail to load (or silently change
+# behaviour) if these versions differ between training and deployment. Never re-pin those
+# libraries in this file; change them only in requirements.txt and retrain.
 -r requirements.txt
 pyreadr==0.5.2
 seaborn==0.13.2
