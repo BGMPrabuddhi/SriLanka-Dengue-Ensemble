@@ -1,8 +1,8 @@
 {
   "use_log_target": true,
   "target_transform_validation_mae": {
-    "log1p": 10.4626,
-    "raw": 10.6092
+    "log1p": 10.4299,
+    "raw": 10.6818
   },
   "with_weather": true,
   "numeric_features": [
@@ -13,6 +13,7 @@
     "rolling_mean_4",
     "rolling_std_4",
     "rolling_mean_8",
+    "lags_missing",
     "rain_mm_lag1",
     "rain_mm_lag2",
     "rain_mm_lag3",
@@ -60,7 +61,7 @@
       "high": 3.0
     },
     "Anuradhapura": {
-      "medium": 5.5,
+      "medium": 5.0,
       "high": 12.0
     },
     "Badulla": {
@@ -73,7 +74,7 @@
     },
     "Colombo": {
       "medium": 110.0,
-      "high": 216.5
+      "high": 217.0
     },
     "Galle": {
       "medium": 12.0,
@@ -81,7 +82,7 @@
     },
     "Gampaha": {
       "medium": 45.0,
-      "high": 93.25
+      "high": 93.0
     },
     "Hambantota": {
       "medium": 7.0,
@@ -89,7 +90,7 @@
     },
     "Jaffna": {
       "medium": 13.0,
-      "high": 40.0
+      "high": 39.75
     },
     "Kalmunai": {
       "medium": 3.0,
@@ -105,7 +106,7 @@
     },
     "Kegalle": {
       "medium": 17.0,
-      "high": 31.25
+      "high": 31.0
     },
     "Kilinochchi": {
       "medium": 1.0,
@@ -133,7 +134,7 @@
     },
     "Mullaitivu": {
       "medium": 0.0,
-      "high": 2.5
+      "high": 3.0
     },
     "Nuwara Eliya": {
       "medium": 3.0,
@@ -145,7 +146,7 @@
     },
     "Puttalam": {
       "medium": 9.0,
-      "high": 20.25
+      "high": 20.0
     },
     "Ratnapura": {
       "medium": 20.0,

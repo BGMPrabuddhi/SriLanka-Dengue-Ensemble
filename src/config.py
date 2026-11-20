@@ -1,3 +1,4 @@
+# AI-assistance disclosure: This file was generated with the help of Claude Code (Anthropic) and reviewed, run and tested by B. G. M. Prabuddhi.
 """Project-wide configuration: paths, constants and district coordinates.
 
 Every other module imports from here so that a single change (e.g. the split

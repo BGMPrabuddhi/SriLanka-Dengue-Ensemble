@@ -1,3 +1,4 @@
+# AI-assistance disclosure: This file was generated with the help of Claude Code (Anthropic) and reviewed, run and tested by B. G. M. Prabuddhi.
 """Feature engineering, chronological split, preprocessing pipeline and risk thresholds.
 
 Timing convention (the key to avoiding leakage)
@@ -31,6 +32,7 @@ EXCLUDE_LAST_N_WEEKS = 2                  # most recent weeks may still receive 
 
 CASE_LAG_FEATURES = [f"cases_lag{k}" for k in range(1, N_LAGS + 1)]
 ROLLING_FEATURES = ["rolling_mean_4", "rolling_std_4", "rolling_mean_8"]
+MISSING_FEATURES = ["lags_missing"]       # how many of the 4 lag weeks were missing reports
 WEATHER_LAG_FEATURES = [f"{v}_lag{k}" for v in WEATHER_VARS for k in WEATHER_LAGS]
 CALENDAR_FEATURES = ["week_sin", "week_cos", "year"]
 CATEGORICAL_FEATURES = ["district"]
@@ -42,7 +44,7 @@ FEATURE_CONFIG_JSON = DATA_PROCESSED / "feature_config.json"
 
 def numeric_features(with_weather: bool = True) -> list[str]:
     weather = WEATHER_LAG_FEATURES if with_weather else []
-    return CASE_LAG_FEATURES + ROLLING_FEATURES + weather + CALENDAR_FEATURES
+    return CASE_LAG_FEATURES + ROLLING_FEATURES + MISSING_FEATURES + weather + CALENDAR_FEATURES
 
 
 def all_features(with_weather: bool = True) -> list[str]:
@@ -73,8 +75,16 @@ def build_panel(dengue: pd.DataFrame, weather: pd.DataFrame | None) -> pd.DataFr
     out["target"] = g["cases"].shift(-1)
 
     # --- lagged cases (lag1 = week t itself)
+    # A missing report inside a lag window is filled with the district's LAST OBSERVED value
+    # (forward-fill within the district: uses only the past, so no leakage and nothing to fit).
+    # A global training median would be wrong here: during an outbreak it would replace e.g.
+    # 1,138 Colombo cases with ~9. `lags_missing` (0-4) is the was-missing flag.
+    last_obs = g["cases"].ffill()
+    n_missing = 0
     for k in range(1, N_LAGS + 1):
-        out[f"cases_lag{k}"] = g["cases"].shift(k - 1)
+        out[f"cases_lag{k}"] = last_obs.groupby(df["district"]).shift(k - 1)
+        n_missing = n_missing + g["cases"].shift(k - 1).isna().astype(int)
+    out["lags_missing"] = n_missing
 
     # --- rolling statistics over weeks <= t. NaN (missing reports) are skipped by pandas
     # as long as at least `min_periods` real values are in the window.
@@ -96,7 +106,6 @@ def build_panel(dengue: pd.DataFrame, weather: pd.DataFrame | None) -> pd.DataFr
     out["week_sin"], out["week_cos"] = cal["week_sin"], cal["week_cos"]
 
     # --- baselines (use the last *observed* value if a week is missing)
-    last_obs = g["cases"].ffill()
     out["naive_pred"] = last_obs                                   # "next week = this week"
     out["seasonal_pred"] = last_obs.groupby(df["district"]).shift(51)  # same week last year (t+1-52)
 
@@ -129,9 +138,11 @@ def split_panel(panel: pd.DataFrame) -> dict[str, pd.DataFrame]:
 def make_preprocessor(num_features: list[str], scale: bool = False) -> ColumnTransformer:
     """Imputation (+ optional scaling) for numeric columns, one-hot for district.
 
-    SimpleImputer(median, add_indicator=True) fills NaN lags (from missing reports) with the
-    TRAINING median and adds a 0/1 "was missing" column for every feature that had NaNs in
-    training. Because it sits inside the model Pipeline, it is fit on training data only,
+    Lag gaps are already forward-filled within each district in build_panel (with the
+    `lags_missing` flag). SimpleImputer(median, add_indicator=True) is the FALLBACK for anything
+    still missing (e.g. no earlier observation exists, or a rolling window with too few reports):
+    it uses the TRAINING median and adds a 0/1 "was missing" column. Because it sits inside the
+    model Pipeline, it is fit on training data only,
     including within each TimeSeriesSplit fold during tuning.
     Scaling is only needed for distance/gradient based models (MLP); trees are scale-invariant.
     """

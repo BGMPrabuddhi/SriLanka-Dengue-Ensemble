@@ -1,3 +1,4 @@
+# AI-assistance disclosure: This file was generated with the help of Claude Code (Anthropic) and reviewed, run and tested by B. G. M. Prabuddhi.
 """Shared colours and matplotlib style so every figure (notebooks + dashboard) looks consistent.
 
 Colours come from a colour-blind-validated categorical palette, used in a FIXED
@@ -16,6 +17,7 @@ FAMILY_COLORS = {
     "Bagging": SERIES[0],
     "Boosting": SERIES[1],
     "Stacking": SERIES[2],
+    "Neural net": SERIES[4],
     "Hybrid": SERIES[6],
 }
 

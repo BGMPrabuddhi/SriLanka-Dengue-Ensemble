@@ -1,3 +1,4 @@
+# AI-assistance disclosure: This file was generated with the help of Claude Code (Anthropic) and reviewed, run and tested by B. G. M. Prabuddhi.
 """Sri Lanka dengue early-warning: reusable project code (imported by notebooks and the app)."""
 import os
 

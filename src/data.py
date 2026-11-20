@@ -1,3 +1,4 @@
+# AI-assistance disclosure: This file was generated with the help of Claude Code (Anthropic) and reviewed, run and tested by B. G. M. Prabuddhi.
 """Data acquisition and cleaning.
 
 1. Dengue cases: `srilanka_weekly_data` from the R package denguedatahub
@@ -9,6 +10,7 @@ Both raw files are saved unchanged in data/raw/; cleaned versions go to data/pro
 """
 import time
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -78,28 +80,59 @@ GAP_WEEK_MIN_ZERO_REGIONS = 20
 GAP_WEEK_JUMP = 10          # zero-count must exceed the median of +-3 neighbouring weeks by this much
 
 
-def flag_missing_reports(df: pd.DataFrame) -> pd.DataFrame:
-    """Mark zeros that are really *missing reports*, not true zero-case weeks.
+DROPOUT_MIN_NEIGHBOUR = 10   # a lone 0 between two weeks with >= 10 cases is a missing report
+SCRAMBLE_MIN_REGIONS = 4     # regions spiking > 4x BOTH neighbours (and >= 30 cases) in one week
+SCRAMBLE_MIN_CASES = 30
 
-    Two patterns found in EDA:
-      1. A region reports 0 for an ENTIRE calendar year while reporting cases in other
-         years (Kilinochchi & Mullaitivu 2007-2009, during the final phase of the civil war;
-         Monaragala 2020).
-      2. A single week where >= 20 of 26 regions report 0 while the surrounding weeks have
-         only a handful (10 Sep 2022: 23 regions vs 1-6 in neighbouring weeks) - a national
-         reporting gap. The "jump vs neighbours" condition avoids flagging periods like
-         mid-2012 where many small regions genuinely reported 0 week after week.
-    These rows get cases = NaN and missing_report = True. We do NOT impute values
-    (that would be inventing data); feature rows touching them are dropped later.
+
+def flag_missing_reports(df: pd.DataFrame) -> pd.DataFrame:
+    """Mark values that are really reporting errors / missing reports, not real case counts.
+
+    Patterns found in EDA (each documented in notebook 01 with the evidence):
+      1. full_year  - a region reports 0 for an ENTIRE calendar year while reporting cases in
+         other years (Kilinochchi & Mullaitivu 2007-2009, final phase of the civil war; Monaragala 2020).
+      2. gap_week   - a week where >= 20 of 26 regions report 0 while surrounding weeks have only a
+         handful (10 Sep 2022: 23 regions vs 1-6 nearby). The "jump vs neighbours" condition avoids
+         flagging periods like mid-2012 when many small regions genuinely reported 0 week after week.
+      3. dropout    - a single region reports 0 between two weeks with >= 10 cases (a partial report;
+         dengue does not vanish for exactly one week).
+      4. scrambled  - a week in which >= 4 regions jump to > 4x BOTH neighbouring weeks (and >= 30
+         cases) while big regions collapse; the counts were assigned to the wrong regions in the
+         source (30 Mar 2026, 8 Jun 2026). The whole week is unreliable, so every region is flagged.
+      5. duplicate  - every region's count is identical to the previous week (a copied report:
+         21 Jan 2012, 18 Dec 2021, 8 Feb 2025, 22 Jun 2026); the copy is flagged.
+    Flagged rows get cases = NaN, missing_report = True and a missing_reason. We do NOT impute or
+    re-assign values (that would be inventing data); feature rows needing them are handled later.
     """
     df = df.copy()
+    reason = pd.Series("", index=df.index)
+
     full_year = df.groupby(["district", "year"])["cases"].transform(lambda s: len(s) >= 50 and s.sum() == 0)
+    reason[full_year.astype(bool)] = "full_year"
 
     zeros = df.groupby("start_date")["cases"].apply(lambda s: (s == 0).sum()).sort_index()
     neighbours = pd.concat([zeros.shift(k) for k in (-3, -2, -1, 1, 2, 3)], axis=1).median(axis=1)
     gap_dates = zeros.index[(zeros >= GAP_WEEK_MIN_ZERO_REGIONS) & (zeros - neighbours >= GAP_WEEK_JUMP)]
-    gap_week = df["start_date"].isin(gap_dates) & (df["cases"] == 0)
-    df["missing_report"] = full_year.astype(bool) | gap_week
+    reason[(reason == "") & df["start_date"].isin(gap_dates) & (df["cases"] == 0)] = "gap_week"
+
+    # wide table (weeks x regions) for the neighbour-based checks
+    wide = df.pivot(index="start_date", columns="district", values="cases").sort_index()
+    prev, nxt = wide.shift(1), wide.shift(-1)
+    dropout = (wide == 0) & (prev >= DROPOUT_MIN_NEIGHBOUR) & (nxt >= DROPOUT_MIN_NEIGHBOUR)
+    inflated = (wide >= SCRAMBLE_MIN_CASES) & (wide > 4 * np.maximum(prev, nxt))
+    scrambled_dates = wide.index[inflated.sum(axis=1) >= SCRAMBLE_MIN_REGIONS]
+    duplicate_dates = wide.index[(wide.diff().abs().sum(axis=1) == 0) & (wide.index > wide.index[0])]
+
+    long_dropout = dropout.stack().rename("d").reset_index()
+    long_dropout = long_dropout[long_dropout["d"]]
+    key = pd.MultiIndex.from_frame(df[["start_date", "district"]])
+    is_dropout = key.isin(pd.MultiIndex.from_frame(long_dropout[["start_date", "district"]]))
+    reason[(reason == "") & is_dropout] = "dropout"
+    reason[(reason == "") & df["start_date"].isin(scrambled_dates)] = "scrambled"
+    reason[(reason == "") & df["start_date"].isin(duplicate_dates)] = "duplicate"
+
+    df["missing_report"] = reason != ""
+    df["missing_reason"] = reason.replace("", None)
     df["cases"] = df["cases"].astype(float).mask(df["missing_report"])
     return df
 
