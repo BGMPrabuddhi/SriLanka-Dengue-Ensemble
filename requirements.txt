@@ -1,0 +1,14 @@
+# Runtime dependencies (used by the Streamlit app AND needed to unpickle the saved models).
+# Pinned versions tested on Python 3.12 locally; all have wheels for Python 3.11 (Streamlit Cloud).
+numpy==1.26.4
+pandas==2.2.3
+scikit-learn==1.5.2
+xgboost==2.1.3
+lightgbm==4.5.0
+catboost==1.2.7
+statsmodels==0.14.4
+joblib==1.4.2
+requests==2.32.3
+matplotlib==3.9.2
+plotly==5.24.1
+streamlit==1.40.2

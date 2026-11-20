@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Streamlit local secrets
+.streamlit/secrets.toml
+
+# Catboost writes training logs here by default
+catboost_info/
+
+# NOTE: data/ and models/ are intentionally committed (small files) so the
+# deployed app runs without retraining or calling external APIs.
