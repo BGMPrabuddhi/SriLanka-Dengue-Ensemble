@@ -144,7 +144,7 @@ LATE_NOTE = ("The most recent 1–2 weeks may still rise as late notifications a
 st.sidebar.markdown("## 🦟 Dengue Early Warning")
 st.sidebar.caption("Sri Lanka · weekly forecasts for 26 health regions")
 PAGES = ["Home", "District forecast & risk", "Model comparison", "Hybrid models", "Explainability & what-if", "About"]
-page = st.sidebar.radio("Go to", PAGES, label_visibility="collapsed")
+page = st.sidebar.radio("Go to", PAGES, label_visibility="collapsed", key="page")
 st.sidebar.divider()
 st.sidebar.caption(f"Data up to week of **{fmt_date(LAST_WEEK)}**")
 st.sidebar.caption(f"Forecast for week of **{fmt_date(TARGET_WEEK)}**")
@@ -204,7 +204,7 @@ def page_district():
     fc = forecast_table(DEPLOYED)
     default = fc.sort_values("vs High threshold", ascending=False).iloc[0]["District"]
     districts = sorted(fc["District"])
-    district = st.selectbox("Choose a health region", districts, index=districts.index(default))
+    district = st.selectbox("Choose a health region", districts, index=districts.index(default), key="dist_region")
     row = fc.set_index("District").loc[district]
 
     c1, c2, c3 = st.columns([1, 1, 1.3])
@@ -319,16 +319,17 @@ def page_models():
         fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.05, hovermode="x unified", yaxis_title="MAE (cases)")
         st.plotly_chart(style(fig, 420, "Error in normal weeks vs outbreak weeks (best model of each family)"),
                         use_container_width=True)
-        st.markdown("Every model is much better than the naive rule in **normal weeks**, but in **outbreak weeks** (55% of "
-                    "the test period) they forecast too low, because cases rise faster than the patterns learned from "
-                    "2007–2021. That is why the overall winner is decided by outbreak weeks.")
+        st.markdown(f"All models beat the naive rule in **normal weeks**. In **outbreak weeks** "
+                    f"({S['outbreak_week_share']:.0%} of the test period) the tree models forecast too low, because cases "
+                    "rise faster than the patterns learned from 2007–2021, so outbreak weeks decide the overall ranking. "
+                    "Combinations that lift outbreak forecasts (stacking, the RF + neural-network hybrid) did best there.")
     with tabs[3]:
         p = T["preds"]
         c1, c2 = st.columns([1, 2])
-        district = c1.selectbox("Region", sorted(p["district"].unique()), index=sorted(p["district"].unique()).index("Colombo"))
+        district = c1.selectbox("Region", sorted(p["district"].unique()), index=sorted(p["district"].unique()).index("Colombo"), key="avp_region")
         model_cols = [c for c in p.columns if c not in ("district", "target_date", "target")]
         default = [m for m in [E.NAIVE_NAME, DEPLOYED, S["best_on_test"]["model"]] if m in model_cols]
-        chosen = c2.multiselect("Models (up to 4)", model_cols, default=list(dict.fromkeys(default)), max_selections=4)
+        chosen = c2.multiselect("Models (up to 4)", model_cols, default=list(dict.fromkeys(default)), max_selections=4, key="avp_models")
         q = p[p["district"] == district].sort_values("target_date")
         fig = go.Figure(go.Scatter(x=q["target_date"], y=q["target"], name="actual", line=dict(color=INK, width=2.5)))
         for i, m in enumerate(chosen):
@@ -352,7 +353,7 @@ def page_hybrids():
     st.subheader("RF + SARIMA (time series)")
     st.caption("SARIMA (a statistical seasonal time-series model) forecasts the weekly series; a Random Forest then "
                "predicts SARIMA's error from recent cases and weather. Walk-forward, one week ahead, 2023–2026.")
-    which = st.radio("Series", ["National", "Colombo"], horizontal=True)
+    which = st.radio("Series", ["National", "Colombo"], horizontal=True, key="hyb_series")
     ar = T["arima_res"][T["arima_res"]["series"] == which].drop(columns="series")
     st.dataframe(ar.style.format({c: "{:.2f}" for c in ar.columns if ar[c].dtype != object}), hide_index=True,
                  use_container_width=True)
@@ -381,22 +382,22 @@ def page_explain():
     t1, t2, t3 = st.tabs(["SHAP (best tree model)", "Random Forest importance", "XGBoost importance"])
     t1.image(str(figs / "shap_summary.png"), use_container_width=True)
     t1.caption("Each dot is one region-week. Red = high feature value; dots to the right push the forecast up. "
-               "Recent case counts dominate; rainfall and humidity 5–7 weeks earlier add a smaller push.")
+               "Recent case counts dominate; rainfall and humidity about 5 and 7 weeks earlier add a smaller push.")
     t2.image(str(figs / "fi_random_forest.png"), use_container_width=True)
     t3.image(str(figs / "fi_xgboost.png"), use_container_width=True)
 
     st.subheader("What-if: change the inputs and see the forecast")
     fc = T["forecast"].set_index("district")
     c1, c2 = st.columns([1, 2])
-    district = c1.selectbox("Region", sorted(fc.index), index=sorted(fc.index).index("Colombo"))
+    district = c1.selectbox("Region", sorted(fc.index), index=sorted(fc.index).index("Colombo"), key="wi_region")
     base = fc.loc[[district]].reset_index()
     train = pd.read_csv(F.FEATURES_CSV, usecols=["district", "cases_lag1", "rain_mm_lag8"])
     dmax = float(train.loc[train["district"] == district, "cases_lag1"].max())
     lag1 = c2.slider("Cases reported last week", 0, int(max(dmax, base["cases_lag1"].iloc[0]) * 1.2),
-                     int(base["cases_lag1"].iloc[0]))
+                     int(base["cases_lag1"].iloc[0]), key=f"wi_cases_{district}")
     rain8 = c2.slider("Rainfall 8 weeks ago (mm in that week)", 0, int(train["rain_mm_lag8"].quantile(0.995)),
-                      int(round(base["rain_mm_lag8"].iloc[0])))
-    week = c2.slider("Week of the year being forecast", 1, 52, int(base["week"].iloc[0]))
+                      int(round(base["rain_mm_lag8"].iloc[0])), key=f"wi_rain_{district}")
+    week = c2.slider("Week of the year being forecast", 1, 52, int(base["week"].iloc[0]), key=f"wi_week_{district}")
 
     x = base.copy()
     x["cases_lag1"] = lag1
