@@ -1,0 +1,3 @@
+model,family,MAE,RMSE,R2,sMAPE,train_time_s,MAE_vs_naive_pct,RMSE_vs_naive_pct
+Naive (last week),Baseline,16.9656,51.3258,0.7704,47.4302,0.0,0.0,0.0
+Seasonal naive (last year),Baseline,39.1025,99.5825,0.1358,80.7185,0.0,-130.4812,-94.0203

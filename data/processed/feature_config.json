@@ -1,0 +1,208 @@
+{
+  "use_log_target": true,
+  "target_transform_validation_mae": {
+    "log1p": 10.4626,
+    "raw": 10.6092
+  },
+  "with_weather": true,
+  "numeric_features": [
+    "cases_lag1",
+    "cases_lag2",
+    "cases_lag3",
+    "cases_lag4",
+    "rolling_mean_4",
+    "rolling_std_4",
+    "rolling_mean_8",
+    "rain_mm_lag1",
+    "rain_mm_lag2",
+    "rain_mm_lag3",
+    "rain_mm_lag4",
+    "rain_mm_lag5",
+    "rain_mm_lag6",
+    "rain_mm_lag7",
+    "rain_mm_lag8",
+    "temp_c_lag1",
+    "temp_c_lag2",
+    "temp_c_lag3",
+    "temp_c_lag4",
+    "temp_c_lag5",
+    "temp_c_lag6",
+    "temp_c_lag7",
+    "temp_c_lag8",
+    "humidity_pct_lag1",
+    "humidity_pct_lag2",
+    "humidity_pct_lag3",
+    "humidity_pct_lag4",
+    "humidity_pct_lag5",
+    "humidity_pct_lag6",
+    "humidity_pct_lag7",
+    "humidity_pct_lag8",
+    "week_sin",
+    "week_cos",
+    "year"
+  ],
+  "categorical_features": [
+    "district"
+  ],
+  "weather_lags": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "risk_thresholds": {
+    "Ampara": {
+      "medium": 1.0,
+      "high": 3.0
+    },
+    "Anuradhapura": {
+      "medium": 5.5,
+      "high": 12.0
+    },
+    "Badulla": {
+      "medium": 7.0,
+      "high": 16.0
+    },
+    "Batticaloa": {
+      "medium": 11.0,
+      "high": 34.0
+    },
+    "Colombo": {
+      "medium": 110.0,
+      "high": 216.5
+    },
+    "Galle": {
+      "medium": 12.0,
+      "high": 27.0
+    },
+    "Gampaha": {
+      "medium": 45.0,
+      "high": 93.25
+    },
+    "Hambantota": {
+      "medium": 7.0,
+      "high": 18.0
+    },
+    "Jaffna": {
+      "medium": 13.0,
+      "high": 40.0
+    },
+    "Kalmunai": {
+      "medium": 3.0,
+      "high": 12.0
+    },
+    "Kalutara": {
+      "medium": 25.0,
+      "high": 46.0
+    },
+    "Kandy": {
+      "medium": 29.0,
+      "high": 60.0
+    },
+    "Kegalle": {
+      "medium": 17.0,
+      "high": 31.25
+    },
+    "Kilinochchi": {
+      "medium": 1.0,
+      "high": 3.0
+    },
+    "Kurunegala": {
+      "medium": 23.0,
+      "high": 46.0
+    },
+    "Mannar": {
+      "medium": 1.0,
+      "high": 3.0
+    },
+    "Matale": {
+      "medium": 7.0,
+      "high": 16.0
+    },
+    "Matara": {
+      "medium": 11.0,
+      "high": 28.0
+    },
+    "Monaragala": {
+      "medium": 4.0,
+      "high": 9.0
+    },
+    "Mullaitivu": {
+      "medium": 0.0,
+      "high": 2.5
+    },
+    "Nuwara Eliya": {
+      "medium": 3.0,
+      "high": 6.0
+    },
+    "Polonnaruwa": {
+      "medium": 3.0,
+      "high": 7.0
+    },
+    "Puttalam": {
+      "medium": 9.0,
+      "high": 20.25
+    },
+    "Ratnapura": {
+      "medium": 20.0,
+      "high": 42.0
+    },
+    "Trincomalee": {
+      "medium": 4.0,
+      "high": 13.0
+    },
+    "Vavuniya": {
+      "medium": 2.0,
+      "high": 6.0
+    }
+  },
+  "train_target_range": [
+    "2007-02-24",
+    "2021-12-25"
+  ],
+  "val_target_range": [
+    "2022-01-01",
+    "2022-12-24"
+  ],
+  "test_target_range": [
+    "2022-12-31",
+    "2026-08-24"
+  ],
+  "excluded_recent_weeks": [
+    "2026-08-31",
+    "2026-09-07"
+  ],
+  "forecast_target_week": "2026-09-14",
+  "districts": [
+    "Ampara",
+    "Anuradhapura",
+    "Badulla",
+    "Batticaloa",
+    "Colombo",
+    "Galle",
+    "Gampaha",
+    "Hambantota",
+    "Jaffna",
+    "Kalmunai",
+    "Kalutara",
+    "Kandy",
+    "Kegalle",
+    "Kilinochchi",
+    "Kurunegala",
+    "Mannar",
+    "Matale",
+    "Matara",
+    "Monaragala",
+    "Mullaitivu",
+    "Nuwara Eliya",
+    "Polonnaruwa",
+    "Puttalam",
+    "Ratnapura",
+    "Trincomalee",
+    "Vavuniya"
+  ]
+}

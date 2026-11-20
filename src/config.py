@@ -31,7 +31,7 @@ TEST_START_YEAR = 2023
 TARGET = "target"           # cases in week t+1 (what we forecast)
 N_LAGS = 4                  # cases_lag1 .. cases_lag4
 WEATHER_VARS = ["rain_mm", "temp_c", "humidity_pct"]
-WEATHER_LAGS = [1, 2, 3, 4]
+WEATHER_LAGS = list(range(1, 9))   # 1..8 weeks: EDA showed rain/humidity peak at 7-9 weeks
 
 # Risk levels: percentiles of each district's TRAINING-period weekly cases.
 RISK_PERCENTILES = {"medium": 50, "high": 75}
