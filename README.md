@@ -2,7 +2,7 @@
 
 **CM4371 Machine Learning & Pattern Recognition · Hands-on project · B. G. M. Prabuddhi**
 
-🔗 **Live dashboard:** _LIVE_URL_PLACEHOLDER_ · 🎥 **Video (≤ 3 min):** _VIDEO_URL_PLACEHOLDER_ · 💻 **Code:** https://github.com/BGMPrabuddhi/sl-dengue-ensemble
+🔗 **Live dashboard:** _LIVE_URL_PLACEHOLDER_ · 🎥 **Video (≤ 3 min):** _VIDEO_URL_PLACEHOLDER_ · 💻 **Code:** https://github.com/BGMPrabuddhi/SriLanka-Dengue-Ensemble
 
 Dengue is one of Sri Lanka's largest public-health burdens: in the record year 2017 the Epidemiology Unit recorded
 **174,687 cases**, with a peak of **10,590 cases in a single week**. Every week, case counts arrive for 26 health regions,
@@ -136,8 +136,8 @@ training-only thresholds.
 
 ## How to run locally
 ```powershell
-git clone https://github.com/BGMPrabuddhi/sl-dengue-ensemble.git
-cd sl-dengue-ensemble
+git clone https://github.com/BGMPrabuddhi/SriLanka-Dengue-Ensemble.git
+cd SriLanka-Dengue-Ensemble
 python -m venv .venv                      # Python 3.12
 .\.venv\Scripts\Activate.ps1              # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt           # enough for the dashboard
@@ -153,7 +153,7 @@ same versions.
 
 ## Repository structure
 ```
-sl-dengue-ensemble/
+SriLanka-Dengue-Ensemble/
 ├── app/app.py                 Streamlit dashboard
 ├── .streamlit/config.toml     dashboard theme
 ├── data/raw/                  downloaded dengue (.rda/.csv) and weather (cached API response)

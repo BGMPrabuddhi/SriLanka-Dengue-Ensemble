@@ -71,4 +71,4 @@ DISTRICT_COORDS = {
 }
 
 GITHUB_USER = "BGMPrabuddhi"
-GITHUB_REPO_URL = f"https://github.com/{GITHUB_USER}/sl-dengue-ensemble"
+GITHUB_REPO_URL = f"https://github.com/{GITHUB_USER}/SriLanka-Dengue-Ensemble"
