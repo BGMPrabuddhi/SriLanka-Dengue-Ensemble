@@ -1,0 +1,83 @@
+{
+  "Bagging (Decision Trees)": {
+    "params": {
+      "model__regressor__n_estimators": 100,
+      "model__regressor__max_samples": 0.5,
+      "model__regressor__max_features": 1.0,
+      "model__regressor__estimator__min_samples_leaf": 3
+    },
+    "n_rounds": null,
+    "cv_mae": 13.652981574731067
+  },
+  "Random Forest": {
+    "params": {
+      "model__regressor__n_estimators": 100,
+      "model__regressor__min_samples_leaf": 3,
+      "model__regressor__max_features": 0.7,
+      "model__regressor__max_depth": null
+    },
+    "n_rounds": null,
+    "cv_mae": 13.559871513663358
+  },
+  "Extra Trees": {
+    "params": {
+      "model__regressor__n_estimators": 200,
+      "model__regressor__min_samples_leaf": 10,
+      "model__regressor__max_features": 1.0,
+      "model__regressor__max_depth": null
+    },
+    "n_rounds": null,
+    "cv_mae": 14.888463375229753
+  },
+  "AdaBoost": {
+    "params": {
+      "model__regressor__loss": "linear",
+      "model__regressor__learning_rate": 0.1,
+      "model__regressor__estimator__max_depth": 5
+    },
+    "n_rounds": 10,
+    "cv_mae": 15.281117602101608
+  },
+  "Gradient Boosting": {
+    "params": {
+      "model__regressor__subsample": 0.7,
+      "model__regressor__min_samples_leaf": 20,
+      "model__regressor__max_depth": 4,
+      "model__regressor__learning_rate": 0.1
+    },
+    "n_rounds": 35,
+    "cv_mae": 14.477228441638397
+  },
+  "XGBoost": {
+    "params": {
+      "model__regressor__subsample": 0.9,
+      "model__regressor__reg_lambda": 1,
+      "model__regressor__min_child_weight": 1,
+      "model__regressor__max_depth": 3,
+      "model__regressor__learning_rate": 0.05,
+      "model__regressor__colsample_bytree": 0.8
+    },
+    "n_rounds": 71,
+    "cv_mae": 14.881279604775463
+  },
+  "LightGBM": {
+    "params": {
+      "model__regressor__subsample": 0.7,
+      "model__regressor__num_leaves": 63,
+      "model__regressor__min_child_samples": 10,
+      "model__regressor__learning_rate": 0.03,
+      "model__regressor__colsample_bytree": 0.5
+    },
+    "n_rounds": 104,
+    "cv_mae": 14.576942778905766
+  },
+  "CatBoost": {
+    "params": {
+      "model__regressor__learning_rate": 0.1,
+      "model__regressor__l2_leaf_reg": 3,
+      "model__regressor__depth": 4
+    },
+    "n_rounds": 69,
+    "cv_mae": 14.41816804735052
+  }
+}
