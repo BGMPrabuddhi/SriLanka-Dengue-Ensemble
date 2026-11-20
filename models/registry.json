@@ -1,0 +1,67 @@
+{
+  "random_forest": {
+    "name": "Random Forest",
+    "file": "random_forest.joblib",
+    "oob_r2_log": 0.842
+  },
+  "bagging_best": {
+    "name": "Extra Trees",
+    "file": "extra_trees.joblib"
+  },
+  "adaboost": {
+    "name": "AdaBoost",
+    "file": "adaboost.joblib"
+  },
+  "gradient_boosting": {
+    "name": "Gradient Boosting",
+    "file": "gradient_boosting.joblib"
+  },
+  "xgboost": {
+    "name": "XGBoost",
+    "file": "xgboost.joblib"
+  },
+  "lightgbm": {
+    "name": "LightGBM",
+    "file": "lightgbm.joblib"
+  },
+  "catboost": {
+    "name": "CatBoost",
+    "file": "catboost.joblib"
+  },
+  "boosting_best": {
+    "name": "Gradient Boosting",
+    "file": "gradient_boosting.joblib"
+  },
+  "stacking": {
+    "name": "Stacking (RF+XGB+LGBM+Cat -> Ridge)",
+    "file": "stacking.joblib",
+    "meta_weights": {
+      "Random Forest": 0.373,
+      "XGBoost": 0.4049,
+      "LightGBM": 0.0236,
+      "CatBoost": 0.246
+    }
+  },
+  "stacking_best": {
+    "name": "Voting (RF+XGB+LGBM+Cat, mean)",
+    "file": "voting.joblib"
+  },
+  "ann": {
+    "name": "ANN (MLP)",
+    "file": "ann_mlp.joblib"
+  },
+  "rf_ann_weighted": {
+    "name": "Hybrid RF+ANN (weighted avg)",
+    "file": "rf_ann_weighted.joblib",
+    "weight_rf": 0.8
+  },
+  "rf_to_ann": {
+    "name": "Hybrid RF->ANN (RF as input)",
+    "file": "rf_to_ann_ann_part.joblib",
+    "rf_file": "random_forest.joblib"
+  },
+  "overall_best": {
+    "name": "Extra Trees",
+    "file": "extra_trees.joblib"
+  }
+}

@@ -1,0 +1,264 @@
+{
+  "generated": "2026-11-20",
+  "selection_rule": "Lowest validation MAE (2022); test results are reported only.",
+  "test_period": [
+    "2022-12-31",
+    "2026-08-24"
+  ],
+  "n_test_rows": 4854,
+  "outbreak_week_share": 0.5515,
+  "naive": {
+    "model": "Naive (last week)",
+    "family": "Baseline",
+    "val_MAE": 11.547,
+    "MAE": 14.949,
+    "RMSE": 37.586,
+    "MAE_vs_naive_pct": 0.0,
+    "MAE_normal": 7.432,
+    "MAE_outbreak": 21.062
+  },
+  "winner_per_family": {
+    "Bagging": {
+      "model": "Extra Trees",
+      "family": "Bagging",
+      "val_MAE": 10.34,
+      "MAE": 14.506,
+      "RMSE": 39.089,
+      "MAE_vs_naive_pct": 2.96,
+      "MAE_normal": 6.199,
+      "MAE_outbreak": 21.262
+    },
+    "Boosting": {
+      "model": "Gradient Boosting",
+      "family": "Boosting",
+      "val_MAE": 10.43,
+      "MAE": 15.447,
+      "RMSE": 43.01,
+      "MAE_vs_naive_pct": -3.33,
+      "MAE_normal": 5.894,
+      "MAE_outbreak": 23.216
+    },
+    "Stacking": {
+      "model": "Voting (RF+XGB+LGBM+Cat, mean)",
+      "family": "Stacking",
+      "val_MAE": 10.407,
+      "MAE": 15.61,
+      "RMSE": 43.194,
+      "MAE_vs_naive_pct": -4.42,
+      "MAE_normal": 5.868,
+      "MAE_outbreak": 23.533
+    },
+    "Neural net": {
+      "model": "ANN (MLP)",
+      "family": "Neural net",
+      "val_MAE": 10.943,
+      "MAE": 17.44,
+      "RMSE": 65.867,
+      "MAE_vs_naive_pct": -16.66,
+      "MAE_normal": 6.891,
+      "MAE_outbreak": 26.02
+    },
+    "Hybrid": {
+      "model": "Hybrid RF+ANN (weighted avg)",
+      "family": "Hybrid",
+      "val_MAE": 10.361,
+      "MAE": 14.19,
+      "RMSE": 36.894,
+      "MAE_vs_naive_pct": 5.08,
+      "MAE_normal": 6.004,
+      "MAE_outbreak": 20.847
+    }
+  },
+  "overall_winner_validation": {
+    "model": "Extra Trees",
+    "family": "Bagging",
+    "val_MAE": 10.34,
+    "MAE": 14.506,
+    "RMSE": 39.089,
+    "MAE_vs_naive_pct": 2.96,
+    "MAE_normal": 6.199,
+    "MAE_outbreak": 21.262
+  },
+  "best_on_test": {
+    "model": "Hybrid RF+ANN (weighted avg)",
+    "family": "Hybrid",
+    "val_MAE": 10.361,
+    "MAE": 14.19,
+    "RMSE": 36.894,
+    "MAE_vs_naive_pct": 5.08,
+    "MAE_normal": 6.004,
+    "MAE_outbreak": 20.847
+  },
+  "deployed_model": "Extra Trees",
+  "cv_mae_ranking_2007_2021": {
+    "Random Forest": 13.56,
+    "Bagging (Decision Trees)": 13.653,
+    "CatBoost": 14.418,
+    "Gradient Boosting": 14.477,
+    "LightGBM": 14.577,
+    "XGBoost": 14.881,
+    "Extra Trees": 14.888,
+    "AdaBoost": 15.281
+  },
+  "validation_test_rank_correlation": 0.742,
+  "stacking_error_correlation": 0.978,
+  "stacking_meta_weights": {
+    "Random Forest": 0.373,
+    "XGBoost": 0.4049,
+    "LightGBM": 0.0236,
+    "CatBoost": 0.246
+  },
+  "log_vs_raw_diagnostic": [
+    {
+      "model": "Random Forest",
+      "target": "log1p",
+      "val_MAE": 10.393,
+      "test_MAE": 14.52,
+      "MAE_normal": 6.073,
+      "MAE_outbreak": 21.389,
+      "mean_error_outbreak": -11.813,
+      "mean_error_normal": 1.796
+    },
+    {
+      "model": "Random Forest",
+      "target": "raw",
+      "val_MAE": 10.67,
+      "test_MAE": 14.543,
+      "MAE_normal": 7.546,
+      "MAE_outbreak": 20.232,
+      "mean_error_outbreak": -2.927,
+      "mean_error_normal": 5.305
+    },
+    {
+      "model": "LightGBM",
+      "target": "log1p",
+      "val_MAE": 10.576,
+      "test_MAE": 18.593,
+      "MAE_normal": 5.983,
+      "MAE_outbreak": 28.849,
+      "mean_error_outbreak": -26.234,
+      "mean_error_normal": -0.187
+    },
+    {
+      "model": "LightGBM",
+      "target": "raw",
+      "val_MAE": 10.769,
+      "test_MAE": 14.602,
+      "MAE_normal": 7.334,
+      "MAE_outbreak": 20.513,
+      "mean_error_outbreak": -6.917,
+      "mean_error_normal": 4.936
+    }
+  ],
+  "rf_sarima": [
+    {
+      "series": "National",
+      "model": "Naive (last week)",
+      "MAE": 210.674,
+      "RMSE": 411.618,
+      "R2": 0.863,
+      "sMAPE": 14.078,
+      "MAE_vs_naive_pct": 0.0,
+      "train_time_s": 0.0
+    },
+    {
+      "series": "National",
+      "model": "SARIMA alone",
+      "MAE": 214.84,
+      "RMSE": 453.554,
+      "R2": 0.833,
+      "sMAPE": 14.247,
+      "MAE_vs_naive_pct": -1.978,
+      "train_time_s": 6.82
+    },
+    {
+      "series": "National",
+      "model": "RF alone",
+      "MAE": 248.36,
+      "RMSE": 522.876,
+      "R2": 0.778,
+      "sMAPE": 15.577,
+      "MAE_vs_naive_pct": -17.888,
+      "train_time_s": 0.42
+    },
+    {
+      "series": "National",
+      "model": "Hybrid RF+SARIMA",
+      "MAE": 202.223,
+      "RMSE": 397.791,
+      "R2": 0.872,
+      "sMAPE": 13.787,
+      "MAE_vs_naive_pct": 4.012,
+      "train_time_s": 7.37
+    },
+    {
+      "series": "Colombo",
+      "model": "Naive (last week)",
+      "MAE": 58.123,
+      "RMSE": 94.158,
+      "R2": 0.814,
+      "sMAPE": 20.232,
+      "MAE_vs_naive_pct": 0.0,
+      "train_time_s": 0.0
+    },
+    {
+      "series": "Colombo",
+      "model": "SARIMA alone",
+      "MAE": 60.52,
+      "RMSE": 113.676,
+      "R2": 0.728,
+      "sMAPE": 20.783,
+      "MAE_vs_naive_pct": -4.124,
+      "train_time_s": 4.23
+    },
+    {
+      "series": "Colombo",
+      "model": "RF alone",
+      "MAE": 62.626,
+      "RMSE": 102.729,
+      "R2": 0.778,
+      "sMAPE": 23.264,
+      "MAE_vs_naive_pct": -7.747,
+      "train_time_s": 0.38
+    },
+    {
+      "series": "Colombo",
+      "model": "Hybrid RF+SARIMA",
+      "MAE": 61.978,
+      "RMSE": 108.028,
+      "R2": 0.755,
+      "sMAPE": 22.445,
+      "MAE_vs_naive_pct": -6.632,
+      "train_time_s": 4.67
+    }
+  ],
+  "shap_group_share": {
+    "recent cases (lags & rolling)": 0.8489,
+    "weather (lags 1-8)": 0.0802,
+    "district": 0.041,
+    "calendar": 0.0298,
+    "was-missing flags": 0.0001
+  },
+  "family_explanations": {
+    "Baseline": "Simple rules with no learning, e.g. 'next week = this week'. Every model must beat these to be useful.",
+    "Bagging": "Many deep decision trees, each trained on a random resample of the data, are averaged. Averaging cancels individual trees' mistakes (reduces variance), giving stable forecasts.",
+    "Boosting": "Small trees are added one after another, each fixing the errors of those before it (reduces bias). Very accurate in familiar conditions, but here it was too cautious in sudden surges.",
+    "Stacking": "Several different models forecast and a final 'manager' model learns how much to trust each. It helps most when the models make different mistakes.",
+    "Neural net": "A small artificial neural network (MLP) that learns smooth patterns from scaled inputs. Unlike trees it can forecast values above anything it has seen, which can over-shoot.",
+    "Hybrid": "Two different kinds of model combined: a seasonal time-series model (SARIMA) plus a Random Forest that corrects its errors, or a Random Forest blended with a neural network."
+  },
+  "key_findings": [
+    "Next week usually looks like this week, so the simple rule 'next week = this week' is a tough benchmark (test MAE 14.95 cases per region-week). Recent case counts carry about 85% of the model's reasoning; weather about 8%, strongest for rain and humidity 5 and 7 weeks earlier.",
+    "Bagging was the most reliable single family: Random Forest and Extra Trees beat the naive rule by about 3% (MAE 14.51), being 19% more accurate in normal weeks while staying about level with naive in outbreak weeks.",
+    "Boosting was the most accurate in calm weeks (normal-week MAE 5.89-6.33) but under-predicted the 2023-2026 surges, ending 3-24% worse than naive. A test showed why: trained on the log of cases, LightGBM scored MAE 18.59; trained on raw cases it scored 14.60, because the log transform pulls forecasts of big outbreaks down.",
+    "Stacking improved on every single model on test (MAE 14.23, +4.8% vs naive) even though the base models' errors were 98% correlated: its meta-learner weights add up to 1.05, slightly scaling forecasts up, which offsets the trees' tendency to under-forecast outbreaks. Simple averaging (voting) did not (-4.4%).",
+    "The best test result came from a hybrid: 80% Random Forest + 20% neural network (MAE 14.19, +5.1% vs naive). The two make opposite mistakes in outbreaks (the forest forecasts too low, the network can over-shoot), so blending them cancels part of the error. SARIMA + Random Forest on the national total also beat naive (+4.0%) while each part alone did not."
+  ],
+  "hybrid_notes": [
+    "RF + SARIMA, national weekly total: hybrid MAE 202 cases/week vs naive 211 (+4.0%); SARIMA alone -2.0%, RF alone -17.9%. SARIMA supplies the seasonal level, the forest corrects what SARIMA misses.",
+    "RF + SARIMA, Colombo: nothing beat naive (hybrid -6.6%); Colombo's sudden 2026 surge was faster than any model could follow one week ahead.",
+    "RF + ANN weighted average: weight 0.80 on the forest, tuned on 2022. Test MAE 14.19 (+5.1% vs naive), the best of all models on test; the ANN alone scored -16.7%.",
+    "RF -> ANN (forest forecast as an extra network input): -9.5% vs naive; feeding one model into the other amplified errors in outbreaks instead of cancelling them."
+  ],
+  "why_best": "No single family dominated, so the answer has two parts. Among single model families, bagging (Random Forest / Extra Trees) was the most reliable: averaging hundreds of deep trees keeps forecasts close to recent case levels while removing noise, beating the naive rule by about 3%. Overall, the best test results came from combining models whose mistakes partly cancel: stacking (+4.8%) and the Random Forest + neural network hybrid (+5.1%). Boosting was best in calm weeks but worst in outbreaks, because trained on log-cases it under-forecasts surges. The deployed model, Extra Trees, was chosen in advance by the 2022 validation error; 2022 was a calm year, so validation could not fully separate the models' outbreak behaviour."
+}
