@@ -95,16 +95,16 @@ section[data-testid="stSidebar"] * {{ color: #e9eff8 !important; }}
 section[data-testid="stSidebar"] div[role="radiogroup"] {{ display: flex; flex-direction: column; gap: 4px; }}
 section[data-testid="stSidebar"] div[role="radiogroup"] label {{
        padding: 9px 14px; border-radius: 10px; width: 100%; margin: 0; cursor: pointer;
-       background: #dfe6f0; border: 1px solid #c9d4e3;                       /* off-white button */
-       box-shadow: 0 2px 5px rgba(0,0,0,0.20);
+       background: #082a55; border: 1px solid rgba(255,255,255,0.22);        /* deep navy button */
+       box-shadow: 0 2px 5px rgba(0,0,0,0.25);
        transition: background .15s ease, transform .15s ease, box-shadow .15s ease; }}
-section[data-testid="stSidebar"] div[role="radiogroup"] label p {{ color: #0d366b !important; font-weight: 600; }}
+section[data-testid="stSidebar"] div[role="radiogroup"] label p {{ color: #ffffff !important; font-weight: 600; }}
 section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
-       background: #eef2f8; transform: translateY(-1px); box-shadow: 0 5px 12px rgba(0,0,0,0.26); }}
+       background: #0f3a70; transform: translateY(-1px); box-shadow: 0 5px 12px rgba(0,0,0,0.30); }}
 section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {{
-       background: #082a55; border-color: rgba(255,255,255,0.55);            /* selected: deep navy */
-       box-shadow: 0 5px 14px rgba(0,0,0,0.35); }}
-section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p {{ color: #ffffff !important;
+       background: #dfe6f0; border-color: #ffffff;                            /* selected: off-white */
+       box-shadow: 0 5px 14px rgba(0,0,0,0.32); }}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p {{ color: #0d366b !important;
        font-weight: 700; }}
 section[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child {{ display: none; }}
 .brand {{ padding: 6px 4px 14px; }}
