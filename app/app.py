@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))           # make `src` importable (needed to un-pickle the models)
 
 from src import config, evaluate as E, features as F, models as M  # noqa: E402
-from src.viz import AXIS, FAMILY_COLORS, GRID, INK, INK_2, MUTED, RISK_COLORS, SERIES, SURFACE  # noqa: E402
+from src.viz import AXIS, FAMILY_COLORS, GRID, INK, INK_2, MUTED, RISK_COLORS, SEQ_BLUE, SERIES, SURFACE  # noqa: E402
 
 st.set_page_config(page_title="Sri Lanka Dengue Early Warning", page_icon="🦟", layout="wide")
 
@@ -81,7 +81,40 @@ def recent_thresholds(years: int = 3) -> dict:
 
 
 def risk_of(value: float, thr: dict) -> str:
-    return "High" if value > thr["high"] else "Medium" if value > thr["medium"] else "Low"
+    if value > thr["high"]:
+        return "High"
+    return "Medium" if value > thr["medium"] else "Low"
+
+
+TREND_CUT = 15   # % change of the 4-week average that counts as "rising" / "falling"
+
+
+@st.cache_data(show_spinner=False)
+def early_warning() -> pd.DataFrame:
+    """Early-warning indicators from REPORTED data only (no model):
+    * 4-week trend: average of the last 4 reported weeks vs the 4 weeks before (%),
+    * how many of the last 4 reported weeks were above the region's recent High threshold."""
+    d = load_tables()["dengue"].sort_values("start_date")
+    thr = recent_thresholds()
+    rows = []
+    for dist, g in d.groupby("district"):
+        s = g.set_index("start_date")["cases"].dropna()
+        last4, prev4 = s.iloc[-4:], s.iloc[-8:-4]
+        trend = 100 * (last4.mean() - prev4.mean()) / prev4.mean() if prev4.mean() > 0 else np.nan
+        if pd.isna(trend) or abs(trend) <= TREND_CUT:
+            label = "■ Stable"
+        else:
+            label = "▲ Rising" if trend > 0 else "▼ Falling"
+        rows.append({"District": dist, "4-week trend %": trend, "Trend": label,
+                     "High weeks (last 4)": int((last4 > thr[dist]["high"]).sum())})
+    return pd.DataFrame(rows)
+
+
+@st.cache_data(show_spinner=False)
+def whatif_ranges() -> tuple[dict, float]:
+    """Slider limits for the what-if page (largest past weekly count per region, typical max rainfall)."""
+    f = pd.read_csv(F.FEATURES_CSV, usecols=["district", "cases_lag1", "rain_mm_lag8"])
+    return f.groupby("district")["cases_lag1"].max().to_dict(), float(f["rain_mm_lag8"].quantile(0.995))
 
 
 @st.cache_data(show_spinner=False)
@@ -101,7 +134,7 @@ def forecast_table(model_name: str) -> pd.DataFrame:
     out["High above"] = [thr[d]["high"] for d in out["District"]]
     out["Risk"] = [risk_of(p, thr[d]) for p, d in zip(out["Forecast next week"], out["District"])]
     out["vs High threshold"] = out["Forecast next week"] / out["High above"].replace(0, np.nan)
-    return out
+    return out.merge(early_warning(), on="District", how="left")
 
 
 # ====================================================================== small UI helpers
@@ -139,11 +172,15 @@ LAST_WEEK = T["dengue"]["start_date"].max()
 TARGET_WEEK = pd.Timestamp(T["cfg"]["forecast_target_week"])
 LATE_NOTE = ("The most recent 1–2 weeks may still rise as late notifications arrive, so the latest reported "
              "numbers can be an under-count.")
+ESTIMATE_NOTE = (f"Forecasts are **model estimates** of next week's reported cases, not actual case reports. On the "
+                 f"2023–2026 test weeks the forecasting model was off by about "
+                 f"{S['overall_winner_validation']['MAE']:.0f} cases per region per week on average, more during outbreaks.")
 
 # ====================================================================== sidebar
 st.sidebar.markdown("## 🦟 Dengue Early Warning")
 st.sidebar.caption("Sri Lanka · weekly forecasts for 26 health regions")
-PAGES = ["Home", "District forecast & risk", "Model comparison", "Hybrid models", "Explainability & what-if", "About"]
+PAGES = ["Home", "Explore the data", "District forecast & risk", "Model comparison", "Hybrid models",
+         "Explainability & what-if", "About"]
 page = st.sidebar.radio("Go to", PAGES, label_visibility="collapsed", key="page")
 st.sidebar.divider()
 st.sidebar.caption(f"Data up to week of **{fmt_date(LAST_WEEK)}**")
@@ -174,7 +211,12 @@ def page_home():
     kpi(c3, "Highest-risk region next week", top["District"],
         f"forecast {top['Forecast next week']:,.0f} cases ({top['Risk']} risk)")
     kpi(c4, "Regions at High risk next week", f"{n_high} of 26", f"week of {fmt_date(TARGET_WEEK)}")
-    st.caption("⚠️ " + LATE_NOTE)
+    rising = fc[fc["Trend"] == "▲ Rising"]["District"].tolist()
+    sustained = fc[fc["High weeks (last 4)"] >= 2]["District"].tolist()
+    st.markdown(f"**Early-warning signals (reported data):** {len(rising)} region(s) with cases **rising** over the last "
+                f"4 weeks{': ' + ', '.join(rising) if rising else ''} · {len(sustained)} region(s) above their High "
+                f"threshold in at least 2 of the last 4 weeks{': ' + ', '.join(sustained) if sustained else ''}.")
+    st.caption("ℹ️ " + ESTIMATE_NOTE + "  ⚠️ " + LATE_NOTE)
 
     s = T["national"]
     fig = go.Figure(go.Scatter(x=s.index, y=s.values, mode="lines", line=dict(color=SERIES[0], width=2),
@@ -199,6 +241,107 @@ def page_home():
                     use_container_width=True)
 
 
+def page_explore():
+    st.title("Explore the dengue data")
+    st.caption("Reported cases only (no model). Weeks the source reported incorrectly are left blank, not filled in.")
+    d = T["dengue"]
+    last_year = int(d["year"].max())
+    all_regions = sorted(d["district"].unique())
+    totals = d.groupby("district")["cases"].sum().sort_values(ascending=False)
+    c1, c2 = st.columns([1, 2])
+    y0, y1 = c1.slider("Years", 2007, last_year, (2017, last_year), key="ex_years")
+    sel = c2.multiselect("Health regions (leave empty for all 26)", all_regions, default=list(totals.index[:4]),
+                         key="ex_regions")
+    regions = sel or all_regions
+    sub = d[d["year"].between(y0, y1) & d["district"].isin(regions)]
+    reported = sub.dropna(subset=["cases"])
+    if reported.empty:
+        st.warning("No reported data for this selection. Widen the years or choose other regions.")
+        return
+
+    # combined weekly series; blank when half or more of the selected regions did not report reliably
+    g = sub.groupby("start_date")
+    combined = g["cases"].sum(min_count=1).mask(g["missing_report"].mean() >= 0.5)
+    if combined.dropna().empty:                       # e.g. a single region with patchy reports
+        combined = g["cases"].sum(min_count=1)
+    scope = "all 26 regions" if not sel else ", ".join(sel) if len(sel) <= 3 else f"{len(sel)} regions"
+    k1, k2, k3, k4 = st.columns(4)
+    kpi(k1, "Reported cases", f"{reported['cases'].sum():,.0f}", f"{scope}, {y0}–{y1}")
+    kpi(k2, "Average per week", f"{combined.mean():,.0f}", "selected regions combined")
+    kpi(k3, "Busiest week", f"{combined.max():,.0f}", f"week of {fmt_date(combined.idxmax())}")
+    kpi(k4, "Unreliable reports", f"{int(sub['missing_report'].sum()):,}", "region-weeks left blank")
+    if y1 == last_year:
+        st.caption(f"{last_year} is incomplete (data up to {fmt_date(LAST_WEEK)}). ⚠️ " + LATE_NOTE)
+
+    # 1) trend over time
+    fig = go.Figure()
+    if sel and len(sel) <= 6:
+        for i, r in enumerate(sel):
+            s = sub[sub["district"] == r].set_index("start_date")["cases"]
+            fig.add_trace(go.Scatter(x=s.index, y=s.values, name=r, mode="lines", line=dict(color=SERIES[i], width=1.8)))
+        title = "Weekly reported cases by region"
+    else:
+        fig.add_trace(go.Scatter(x=combined.index, y=combined.values, mode="lines", name="total",
+                                 line=dict(color=SERIES[0], width=2), hovertemplate="%{y:,.0f} cases<extra></extra>"))
+        title = f"Weekly reported cases, total of {scope}"
+        if len(sel) > 6:
+            st.caption("More than 6 regions selected, so the chart shows their combined total.")
+    st.plotly_chart(style(fig, 360, title), use_container_width=True)
+
+    # 2) district-wise totals and 3) seasonality
+    left, right = st.columns([1.1, 1])
+    yrs = d[d["year"].between(y0, y1)]
+    tot = yrs.groupby("district")["cases"].sum().sort_values()
+    fig = go.Figure(go.Bar(
+        y=tot.index, x=tot.values, orientation="h",
+        marker_color=[SERIES[0] if (not sel or r in sel) else "#c9c8c1" for r in tot.index],
+        text=[f"{v:,.0f}" for v in tot.values], textposition="outside", cliponaxis=False,
+        hovertemplate="%{y}: %{x:,.0f} cases<extra></extra>"))
+    fig.update_layout(hovermode="closest")
+    left.plotly_chart(style(fig, 640, f"Reported cases by region, {y0}–{y1}"), use_container_width=True)
+    left.caption("Selected regions in blue.")
+
+    cal = d.drop_duplicates("start_date").set_index("start_date")["week"]
+    prof = combined.to_frame("cases").join(cal)
+    prof = prof[prof["week"] <= 52].groupby("week")["cases"].quantile([0.25, 0.5, 0.75]).unstack()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=prof.index, y=prof[0.75], line=dict(width=0), showlegend=False, hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=prof.index, y=prof[0.25], fill="tonexty", fillcolor="rgba(42,120,214,0.18)",
+                             line=dict(width=0), name="middle 50% of years", hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=prof.index, y=prof[0.5], line=dict(color=SERIES[0], width=2), name="median year",
+                             hovertemplate="week %{x}: %{y:,.0f} cases<extra></extra>"))
+    fig.update_xaxes(title="week of year")
+    right.plotly_chart(style(fig, 360, "Seasonal pattern (selected regions)"), use_container_width=True)
+    right.caption("Typical peaks follow the South-West monsoon (June–July) and the North-East monsoon (December–January).")
+
+    # 4) year x region heatmap
+    ann = sub.groupby(["district", "year"])["cases"].sum(min_count=1).unstack()
+    ann = ann.loc[ann.sum(axis=1).sort_values(ascending=False).index]
+    scale = [[i / (len(SEQ_BLUE) - 1), c] for i, c in enumerate(SEQ_BLUE)]
+    fig = go.Figure(go.Heatmap(
+        z=np.log10(ann.to_numpy(dtype=float) + 1), x=ann.columns, y=ann.index, customdata=ann.to_numpy(),
+        colorscale=scale, hovertemplate="%{y}, %{x}: %{customdata:,.0f} cases<extra></extra>",
+        colorbar=dict(title="cases / year", tickvals=[1, 2, 3, 4], ticktext=["10", "100", "1k", "10k"])))
+    fig.update_yaxes(autorange="reversed", showgrid=False)
+    fig.update_layout(hovermode="closest")
+    st.plotly_chart(style(fig, max(260, 26 * len(ann) + 90), "Cases per year and region (log colour scale; blank = not reported)"),
+                    use_container_width=True)
+
+    # 5) summary statistics
+    stats = reported.groupby("district")["cases"].agg(["sum", "mean", "median", "max"])
+    peak = reported.loc[reported.groupby("district")["cases"].idxmax(), ["district", "start_date"]].set_index("district")
+    stats = stats.join(peak).join(sub.groupby("district")["missing_report"].sum()).reset_index()
+    stats.columns = ["Region", "Total", "Weekly mean", "Weekly median", "Busiest week (cases)", "Busiest week",
+                     "Unreliable weeks"]
+    st.subheader("Summary statistics")
+    st.dataframe(stats.sort_values("Total", ascending=False), hide_index=True, use_container_width=True,
+                 column_config={"Total": st.column_config.NumberColumn(format="%d"),
+                                "Weekly mean": st.column_config.NumberColumn(format="%.1f"),
+                                "Weekly median": st.column_config.NumberColumn(format="%.0f"),
+                                "Busiest week (cases)": st.column_config.NumberColumn(format="%d"),
+                                "Busiest week": st.column_config.DateColumn(format="DD MMM YYYY")})
+
+
 def page_district():
     st.title("District forecast & risk")
     fc = forecast_table(DEPLOYED)
@@ -215,6 +358,13 @@ def page_district():
                 f'<div style="margin:8px 0">{badge(row["Risk"])}</div>'
                 f'<div class="sub">Medium above {row["Medium above"]:.0f} · High above {row["High above"]:.0f} cases</div></div>',
                 unsafe_allow_html=True)
+    st.write("")
+    e1, e2, _ = st.columns([1, 1, 1.3])
+    trend_txt = f"{row['4-week trend %']:+.0f}%" if pd.notna(row["4-week trend %"]) else "n/a"
+    kpi(e1, "Early warning · 4-week trend", f"{row['Trend']}", f"last 4 reported weeks vs the 4 before: {trend_txt}")
+    kpi(e2, "Early warning · weeks above High", f"{row['High weeks (last 4)']} of 4",
+        "recent reported weeks above the High threshold")
+    st.caption("ℹ️ " + ESTIMATE_NOTE)
 
     hist = T["dengue"][(T["dengue"]["district"] == district)].set_index("start_date")["cases"]
     hist = hist[hist.index > LAST_WEEK - pd.Timedelta(weeks=104)]
@@ -251,7 +401,8 @@ def page_district():
     fig.update_layout(hovermode="closest", yaxis_title="forecast ÷ High threshold")
     st.plotly_chart(style(fig, 360, "Forecast relative to each region's High-risk threshold"), use_container_width=True)
     st.dataframe(
-        view[["District", "Risk", "Last reported week", "Forecast next week", "Change %", "Medium above", "High above"]],
+        view[["District", "Risk", "Trend", "High weeks (last 4)", "Last reported week", "Forecast next week",
+              "Change %", "Medium above", "High above"]],
         hide_index=True, use_container_width=True,
         column_config={"Change %": st.column_config.NumberColumn(format="%+.0f%%"),
                        "Last reported week": st.column_config.NumberColumn(format="%d"),
@@ -263,17 +414,48 @@ def page_district():
 def page_models():
     st.title("Which ensemble approach forecasts dengue best?")
     res = T["results"]
-    st.markdown(f'<div class="panel"><b>Which approach performed best, and why</b><br>{S["why_best"]}</div>',
-                unsafe_allow_html=True)
-    with st.expander("Key findings in plain English", expanded=True):
-        for k in S["key_findings"]:
-            st.markdown(f"- {k}")
-
     naive = res.set_index("model").loc[E.NAIVE_NAME]
     st.markdown(f"All models forecast **next week's cases for each of 26 regions** and are scored on the same "
                 f"**{S['n_test_rows']:,} region-weeks** from {S['test_period'][0]} to {S['test_period'][1]}, which were "
-                f"never used for training. MAE = average error in cases per region-week. The simple rule *“next week = this "
-                f"week”* scores **MAE {naive.MAE:.2f}**; positive *% vs naive* means better than that rule.")
+                f"never used for training. MAE = average error in cases per region-week (lower is better). The simple rule "
+                f"*“next week = this week”* scores **MAE {naive.MAE:.2f}**; positive *% vs naive* means better than that rule.")
+
+    # ---- core comparison: one model per ensemble strategy
+    st.subheader("Bagging vs Boosting vs Stacking")
+    core = S["core_comparison"]
+    short = {"Bagging": "Random Forest", "Boosting": "XGBoost", "Stacking": "RF+XGB+LGBM+Cat → Ridge"}
+    best_core = min(core, key=lambda f: core[f]["MAE"])
+    cols = st.columns(3)
+    for col, fam in zip(cols, ["Bagging", "Boosting", "Stacking"]):
+        r = core[fam]
+        star = " 🏆" if fam == best_core else ""
+        col.markdown(
+            f'<div class="kpi" style="border-top:5px solid {FAMILY_COLORS[fam]}">'
+            f'<div class="label"><b>{fam}</b> · {short[fam]}{star}</div>'
+            f'<div class="value">MAE {r["MAE"]:.2f}</div>'
+            f'<div class="sub">{r["MAE_vs_naive_pct"]:+.1f}% vs naive · normal weeks {r["MAE_normal"]:.2f} · '
+            f'outbreak weeks {r["MAE_outbreak"]:.2f}</div></div>', unsafe_allow_html=True)
+    groups = ["All test weeks", "Normal weeks", "Outbreak weeks"]
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=groups, y=[naive.MAE, naive.MAE_normal, naive.MAE_outbreak], name="Naive (last week)",
+                         marker_color=FAMILY_COLORS["Baseline"]))
+    for fam in ["Bagging", "Boosting", "Stacking"]:
+        r = core[fam]
+        fig.add_trace(go.Bar(x=groups, y=[r["MAE"], r["MAE_normal"], r["MAE_outbreak"]],
+                             name=f"{fam}: {short[fam]}", marker_color=FAMILY_COLORS[fam]))
+    fig.update_layout(barmode="group", bargap=0.22, bargroupgap=0.06, yaxis_title="MAE (cases)")
+    st.plotly_chart(style(fig, 380, "Test error of the three ensemble strategies vs the naive rule"),
+                    use_container_width=True)
+    st.markdown('<div class="panel"><b>Why they behaved this way</b><ul>' +
+                "".join(f"<li>{t}</li>" for t in S["core_explanation"]) + "</ul></div>", unsafe_allow_html=True)
+
+    # ---- all models
+    st.subheader("All models, including the extra boosters, voting, neural network and hybrids")
+    st.markdown(f'<div class="panel"><b>Which approach performed best overall, and why</b><br>{S["why_best"]}</div>',
+                unsafe_allow_html=True)
+    with st.expander("Key findings in plain English"):
+        for k in S["key_findings"]:
+            st.markdown(f"- {k}")
 
     tabs = st.tabs(["Results table", "Accuracy", "Normal vs outbreak weeks", "Actual vs predicted", "The ensemble families"])
     with tabs[0]:
@@ -391,11 +573,11 @@ def page_explain():
     c1, c2 = st.columns([1, 2])
     district = c1.selectbox("Region", sorted(fc.index), index=sorted(fc.index).index("Colombo"), key="wi_region")
     base = fc.loc[[district]].reset_index()
-    train = pd.read_csv(F.FEATURES_CSV, usecols=["district", "cases_lag1", "rain_mm_lag8"])
-    dmax = float(train.loc[train["district"] == district, "cases_lag1"].max())
+    case_max, rain_max = whatif_ranges()
+    dmax = float(case_max[district])
     lag1 = c2.slider("Cases reported last week", 0, int(max(dmax, base["cases_lag1"].iloc[0]) * 1.2),
                      int(base["cases_lag1"].iloc[0]), key=f"wi_cases_{district}")
-    rain8 = c2.slider("Rainfall 8 weeks ago (mm in that week)", 0, int(train["rain_mm_lag8"].quantile(0.995)),
+    rain8 = c2.slider("Rainfall 8 weeks ago (mm in that week)", 0, int(rain_max),
                       int(round(base["rain_mm_lag8"].iloc[0])), key=f"wi_rain_{district}")
     week = c2.slider("Week of the year being forecast", 1, 52, int(base["week"].iloc[0]), key=f"wi_week_{district}")
 
@@ -418,7 +600,8 @@ def page_explain():
     kpi(k2, "Forecast with your inputs", f"{p_new:,.0f}", f"{p_new - p_base:+,.0f} cases")
     k3.markdown(f'<div class="kpi"><div class="label">Risk with your inputs</div><div style="margin:8px 0">'
                 f'{badge(level)}</div><div class="sub">recent-baseline thresholds</div></div>', unsafe_allow_html=True)
-    st.caption(f"Live prediction from the saved **{DEPLOYED}** model. Changing last week's cases also updates the 4- and "
+    st.caption(f"Live prediction from the saved **{DEPLOYED}** model, for exploring the model's behaviour: these are "
+               "model estimates, not reported cases. Changing last week's cases also updates the 4- and "
                "8-week averages consistently. Because tree models learn step-like rules, small slider moves can leave "
                "the forecast unchanged and then jump.")
 
@@ -456,5 +639,6 @@ the data and modelling decisions, and reviewed, ran and interpreted all results.
 """)
 
 
-{"Home": page_home, "District forecast & risk": page_district, "Model comparison": page_models,
- "Hybrid models": page_hybrids, "Explainability & what-if": page_explain, "About": page_about}[page]()
+{"Home": page_home, "Explore the data": page_explore, "District forecast & risk": page_district,
+ "Model comparison": page_models, "Hybrid models": page_hybrids, "Explainability & what-if": page_explain,
+ "About": page_about}[page]()

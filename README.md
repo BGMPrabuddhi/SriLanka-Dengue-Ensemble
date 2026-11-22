@@ -31,7 +31,10 @@ The `.rda` file is downloaded automatically and read with `pyreadr`; weather is 
 two date formats, and rebuilt year/week from dates (the source labels are wrong around New Year). **570 district-weeks
 (2.1%) were flagged as reporting errors and kept as missing, never invented:** whole missing years (northern regions
 2007–09, Monaragala 2020), a national reporting gap (10 Sep 2022), single-week drop-outs, four weeks that are exact copies
-of the previous week, and two 2026 weeks in which counts were assigned to the wrong regions.
+of the previous week, and two 2026 weeks in which counts were assigned to the wrong regions. **Outliers:** 3.8% of
+region-weeks are extreme by a per-district IQR rule, but 77% fall in the epidemic years 2017, 2019, 2023 and 2026, and 79%
+occur while at least 3 regions are extreme together. They are real outbreaks, so they are kept (skewness is handled with a
+log1p target) and only reporting errors are flagged.
 
 ## Pipeline
 ```mermaid
@@ -76,6 +79,26 @@ flowchart LR
   weeks** (actual above the region's training 75th percentile).
 
 ## Results (test period 2023–2026, 4,854 region-weeks)
+
+### Core comparison: Bagging vs Boosting vs Stacking
+| Strategy | Model | Test MAE | vs naive | MAE normal weeks | MAE outbreak weeks |
+|---|---|---|---|---|---|
+| Baseline | Naive (next week = this week) | 14.95 | — | 7.43 | 21.06 |
+| **Bagging** | Random Forest | 14.52 | +2.9% | 6.07 | 21.39 |
+| **Boosting** | XGBoost | 16.51 | −10.4% | 5.93 | 25.11 |
+| **Stacking** | RF + XGBoost + LightGBM + CatBoost → RidgeCV | **14.23** | **+4.8%** | 6.69 | **20.37** |
+
+* **Bagging** averages hundreds of deep trees (lower variance): 18% better than naive in normal weeks, level in outbreaks.
+* **Boosting** removes bias step by step and is the most accurate in calm weeks, but under-forecasts surges. The cause is
+  the log-cases target, not boosting: the same XGBoost trained on raw cases scores **14.37** (+3.9%, better than Random
+  Forest). Log-cases was chosen on the calm 2022 validation year, which hid this cost; we report it rather than switch
+  after seeing the test set.
+* **Stacking** wins even though the base models' errors are 98% correlated: its meta-learner weights sum to 1.05, lifting
+  forecasts and correcting part of the shared outbreak under-forecast (best outbreak-week error of the three).
+
+![Core comparison](reports/figures/core_bagging_boosting_stacking.png)
+
+### All models
 | Family | Model | Test MAE | Test RMSE | R² | MAE vs naive | MAE normal wks | MAE outbreak wks | Val MAE (2022) |
 |---|---|---|---|---|---|---|---|---|
 | Baseline | Naive (last week) | 14.95 | 37.59 | 0.867 | +0.0% | 7.43 | 21.06 | 11.55 |
@@ -110,8 +133,9 @@ RF + SARIMA hybrid (single weekly series, walk-forward one-step-ahead):
 2. **Bagging is the most reliable single family** (+3% vs naive). Averaging hundreds of deep trees reduces variance: forecasts
    are 17–19% more accurate than naive in normal weeks and level with naive in outbreak weeks.
 3. **Boosting is best in calm weeks but worst in outbreaks** (−3% to −24%). The main cause is the log1p target: it makes
-   boosted forecasts of big outbreaks too low (retransformation bias). LightGBM trained on raw cases scores 14.60 instead of
-   18.59. Only 0.4% of test weeks exceeded a region's training maximum, so "trees cannot extrapolate" is a minor factor.
+   boosted forecasts of big outbreaks too low (retransformation bias). On raw cases XGBoost scores 14.37 instead of 16.51
+   and LightGBM 14.60 instead of 18.59. Only 0.4% of test weeks exceeded a region's training maximum, so "trees cannot
+   extrapolate" is a minor factor.
 4. **Combining models helps when it corrects that shared under-prediction.** Base models' errors are 98% correlated, so
    voting gains nothing (−4.4%), but stacking's meta-weights sum to 1.05 and scale forecasts up (+4.8%); the RF + ANN hybrid
    (+5.1%, best on test) blends a forest that forecasts too low with a network that can over-shoot. RF + SARIMA beats naive
@@ -124,11 +148,13 @@ its biology) is in [notebooks/07_final_comparison.ipynb](notebooks/07_final_comp
 notes on **RF vs XGBoost / LightGBM / CatBoost** and **tree ensembles on tabular vs image/text data**.
 
 ## Dashboard
-Six pages: **Home** (story + KPIs + national trend), **District forecast & risk** (next-week forecast, risk badge, all-region
-table), **Model comparison** (results by family, normal vs outbreak errors, actual-vs-predicted, "which approach and why"),
-**Hybrid models**, **Explainability & what-if** (SHAP, live prediction from sliders), **About** (sources, limitations,
-AI-use disclosure). Risk on the dashboard uses *recent-baseline* thresholds (each region's last 3 years); evaluation used
-training-only thresholds.
+Seven pages: **Home** (situation overview, KPIs, early-warning signals, national trend), **Explore the data** (year and
+region filters, trends over time, region-wise totals, seasonality, year × region heatmap, summary statistics),
+**District forecast & risk** (next-week forecast, risk badge, early-warning indicators, all-region table), **Model
+comparison** (bagging vs boosting vs stacking first, then all models, normal vs outbreak errors, actual-vs-predicted, "which
+approach and why"), **Hybrid models**, **Explainability & what-if** (SHAP, live prediction from sliders), **About**
+(sources, limitations, AI-use disclosure). Risk on the dashboard uses *recent-baseline* thresholds (each region's last 3
+years); evaluation used training-only thresholds. Forecasts are labelled as model estimates, not reported cases.
 
 | Home | District forecast | Model comparison |
 |---|---|---|

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-20",
+  "generated": "2026-11-23",
   "selection_rule": "Lowest validation MAE (2022); test results are reported only.",
   "test_period": [
     "2022-12-31",
@@ -90,6 +90,44 @@
     "MAE_outbreak": 20.847
   },
   "deployed_model": "Extra Trees",
+  "core_comparison": {
+    "Bagging": {
+      "model": "Random Forest",
+      "family": "Bagging",
+      "val_MAE": 10.393,
+      "MAE": 14.52,
+      "RMSE": 37.472,
+      "MAE_vs_naive_pct": 2.87,
+      "MAE_normal": 6.073,
+      "MAE_outbreak": 21.389
+    },
+    "Boosting": {
+      "model": "XGBoost",
+      "family": "Boosting",
+      "val_MAE": 10.442,
+      "MAE": 16.508,
+      "RMSE": 51.886,
+      "MAE_vs_naive_pct": -10.43,
+      "MAE_normal": 5.926,
+      "MAE_outbreak": 25.113
+    },
+    "Stacking": {
+      "model": "Stacking (RF+XGB+LGBM+Cat -> Ridge)",
+      "family": "Stacking",
+      "val_MAE": 10.455,
+      "MAE": 14.234,
+      "RMSE": 36.884,
+      "MAE_vs_naive_pct": 4.78,
+      "MAE_normal": 6.692,
+      "MAE_outbreak": 20.367
+    }
+  },
+  "core_explanation": [
+    "Ranking on the same test weeks: Stacking (RF+XGB+LGBM+CatBoost -> Ridge: MAE 14.23, +4.8% vs naive), then Bagging (Random Forest: MAE 14.52, +2.9% vs naive), then Boosting (XGBoost: MAE 16.51, -10.4% vs naive). The naive rule scores 14.95.",
+    "Bagging (Random Forest) averages hundreds of deep trees, which removes noise (lower variance): it is 18% more accurate than naive in normal weeks (6.07 vs 7.43) and close to naive in outbreak weeks (21.39 vs 21.06).",
+    "Boosting (XGBoost) adds shallow trees one at a time to remove bias. It fits calm weeks best (normal-week MAE 5.93) but under-forecasts surges (outbreak-week MAE 25.11, average error -20.4 cases). The cause is the log-cases target, not boosting itself: the same XGBoost trained on raw cases scores MAE 14.37 (+3.9% vs naive) with an outbreak error of only -6.3. Log-cases was chosen because it won on the calm 2022 validation year.",
+    "Stacking learns how to combine Random Forest, XGBoost, LightGBM and CatBoost. Their errors are 98% correlated, so it cannot gain much from diversity, but its meta-learner weights sum to 1.05, lifting forecasts slightly and correcting part of the shared under-forecast (outbreak-week MAE 20.37, the lowest of the three)."
+  ],
   "cv_mae_ranking_2007_2021": {
     "Random Forest": 13.56,
     "Bagging (Decision Trees)": 13.653,
@@ -128,6 +166,26 @@
       "MAE_outbreak": 20.232,
       "mean_error_outbreak": -2.927,
       "mean_error_normal": 5.305
+    },
+    {
+      "model": "XGBoost",
+      "target": "log1p",
+      "val_MAE": 10.442,
+      "test_MAE": 16.508,
+      "MAE_normal": 5.926,
+      "MAE_outbreak": 25.113,
+      "mean_error_outbreak": -20.438,
+      "mean_error_normal": 1.243
+    },
+    {
+      "model": "XGBoost",
+      "target": "raw",
+      "val_MAE": 10.671,
+      "test_MAE": 14.37,
+      "MAE_normal": 7.415,
+      "MAE_outbreak": 20.025,
+      "mean_error_outbreak": -6.296,
+      "mean_error_normal": 4.976
     },
     {
       "model": "LightGBM",

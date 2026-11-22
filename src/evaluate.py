@@ -66,12 +66,6 @@ def load_results() -> pd.DataFrame:
     return pd.DataFrame(columns=RESULT_COLUMNS)
 
 
-def reset_results():
-    """Delete results and stored predictions (called once at the start of notebook 02)."""
-    for f in (RESULTS_CSV, PREDICTIONS_CSV, VAL_PREDICTIONS_CSV):
-        f.unlink(missing_ok=True)
-
-
 def record_result(model: str, family: str, test: pd.DataFrame, test_pred,
                   train_time_s: float = 0.0, val: pd.DataFrame | None = None, val_pred=None) -> dict:
     """Score a model on the test rows, upsert its row in models/results.csv and store predictions.

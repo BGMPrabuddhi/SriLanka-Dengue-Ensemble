@@ -32,21 +32,22 @@ Random Forest with a neural network. Every model is measured against the simple 
 **[Click: District forecast & risk → choose Colombo]**
 "Here is next week's forecast for Colombo with a colour-coded risk level, and below it all twenty-six regions, ranked."
 
-**[Click: Model comparison → Accuracy tab, then Normal vs outbreak weeks tab]**
-"Bagging beat the naive rule by about three percent. Boosting was the best in calm weeks but under-predicted outbreaks,
-ending up to twenty-four percent worse. My tests traced this to the log transformation of the target."
+**[Click: Model comparison → top section 'Bagging vs Boosting vs Stacking']**
+"Here is the core comparison. Random Forest, the bagging model, beat the naive rule by about three percent. XGBoost, the
+boosting model, was the best in calm weeks but under-predicted outbreaks and ended ten percent worse. My tests traced this
+to the log transformation of the target: on raw counts the same XGBoost would have been four percent better."
 
 **[Click: Actual vs predicted tab → Colombo]**
 "You can see every model lagging behind the sudden 2026 surge."
 
 **[Click: Explainability & what-if → move 'Cases reported last week' slider]**
-"Recent cases drive about eighty-five percent of the forecast; rain five to seven weeks earlier adds a little. Moving the
-slider updates the forecast live."
+"Recent cases drive about eighty-five percent of the forecast; rain five to seven weeks earlier adds a little."
 
 ### 2:30 – 3:00 · Results and conclusion
 **[Show: Model comparison → 'Which approach performed best, and why' panel]**
 
-"The best test result came from combining models whose errors cancel: eighty percent Random Forest plus twenty percent
-neural network, five point one percent better than naive, closely followed by stacking at four point eight percent.
+"Of the three ensemble strategies, stacking won: four point eight percent better than naive, because its meta-learner
+corrected the shared under-forecast of outbreaks. Overall, the best test result came from a hybrid of eighty percent Random
+Forest and twenty percent neural network, five point one percent better than naive.
 The lesson: in outbreak-heavy years, diversity in *how* models fail matters more than any single algorithm.
 This project was built with the help of Claude Code, an AI assistant, which I have disclosed in the repository. Thank you."
