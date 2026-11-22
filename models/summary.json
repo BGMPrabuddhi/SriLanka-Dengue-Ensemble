@@ -298,12 +298,12 @@
     "was-missing flags": 0.0001
   },
   "family_explanations": {
-    "Baseline": "Simple rules with no learning, e.g. 'next week = this week'. Every model must beat these to be useful.",
-    "Bagging": "Many deep decision trees, each trained on a random resample of the data, are averaged. Averaging cancels individual trees' mistakes (reduces variance), giving stable forecasts.",
-    "Boosting": "Small trees are added one after another, each fixing the errors of those before it (reduces bias). Very accurate in familiar conditions, but here it was too cautious in sudden surges.",
-    "Stacking": "Several different models forecast and a final 'manager' model learns how much to trust each. It helps most when the models make different mistakes.",
-    "Neural net": "A small artificial neural network (MLP) that learns smooth patterns from scaled inputs. Unlike trees it can forecast values above anything it has seen, which can over-shoot.",
-    "Hybrid": "Two different kinds of model combined: a seasonal time-series model (SARIMA) plus a Random Forest that corrects its errors, or a Random Forest blended with a neural network."
+    "Baseline": "Simple rules with no learning (e.g. next week = this week); every model must beat them.",
+    "Bagging": "Many deep trees trained on random resamples of the data and averaged, which lowers variance.",
+    "Boosting": "Small trees added one after another, each correcting the previous errors, which lowers bias.",
+    "Stacking": "A meta-model learns how much to trust each base model's forecast.",
+    "Neural net": "A small neural network (MLP) that learns smooth patterns and can forecast above past values.",
+    "Hybrid": "Two different kinds of model combined: SARIMA + Random Forest, or Random Forest + neural network."
   },
   "key_findings": [
     "Next week usually looks like this week, so the simple rule 'next week = this week' is a tough benchmark (test MAE 14.95 cases per region-week). Recent case counts carry about 85% of the model's reasoning; weather about 8%, strongest for rain and humidity 5 and 7 weeks earlier.",
@@ -312,6 +312,14 @@
     "Stacking improved on every single model on test (MAE 14.23, +4.8% vs naive) even though the base models' errors were 98% correlated: its meta-learner weights add up to 1.05, slightly scaling forecasts up, which offsets the trees' tendency to under-forecast outbreaks. Simple averaging (voting) did not (-4.4%).",
     "The best test result came from a hybrid: 80% Random Forest + 20% neural network (MAE 14.19, +5.1% vs naive). The two make opposite mistakes in outbreaks (the forest forecasts too low, the network can over-shoot), so blending them cancels part of the error. SARIMA + Random Forest on the national total also beat naive (+4.0%) while each part alone did not."
   ],
+  "dashboard_findings": [
+    "**The naive rule is hard to beat.** Dengue is persistent, so 'next week = this week' already scores MAE 14.95; recent case counts drive about 85% of every model's forecast.",
+    "**Bagging reduced variance.** Random Forest averages hundreds of deep trees, making it 18% more accurate than naive in normal weeks and +2.9% overall.",
+    "**Boosting reduced bias but missed outbreaks.** XGBoost was the most accurate in calm weeks (MAE 5.93) but under-forecast surges (-10.4% overall); trained on raw instead of log cases it would have scored 14.37.",
+    "**Stacking helped a little.** The base models' errors were 98% correlated, so there was little diversity to exploit; stacking still came out best of the three strategies (+4.8%) because its meta-learner lifted the shared under-forecast of outbreaks. A Random Forest + neural-network hybrid was best overall (+5.1%).",
+    "**Record outbreaks are hard for trees.** Trees cannot forecast above the values they were trained on, and every model lagged the 2023\u20132026 surges (55% of test weeks were outbreak weeks). Only 0.4% of test weeks exceeded a region's training maximum, so the bigger problem was that outbreak-level weeks were rare in the training years."
+  ],
+  "share_above_training_max": 0.0035,
   "hybrid_notes": [
     "RF + SARIMA, national weekly total: hybrid MAE 202 cases/week vs naive 211 (+4.0%); SARIMA alone -2.0%, RF alone -17.9%. SARIMA supplies the seasonal level, the forest corrects what SARIMA misses.",
     "RF + SARIMA, Colombo: nothing beat naive (hybrid -6.6%); Colombo's sudden 2026 surge was faster than any model could follow one week ahead.",

@@ -148,13 +148,20 @@ its biology) is in [reports/ANALYSIS.md](reports/ANALYSIS.md), together with res
 notes on **RF vs XGBoost / LightGBM / CatBoost** and **tree ensembles on tabular vs image/text data**.
 
 ## Dashboard
-Seven pages: **Home** (situation overview, KPIs, early-warning signals, national trend), **Explore the data** (year and
-region filters, trends over time, region-wise totals, seasonality, year × region heatmap, summary statistics),
-**District forecast & risk** (next-week forecast, risk badge, early-warning indicators, all-region table), **Model
-comparison** (bagging vs boosting vs stacking first, then all models, normal vs outbreak errors, actual-vs-predicted, "which
-approach and why"), **Hybrid models**, **Explainability & what-if** (SHAP, live prediction from sliders), **About**
-(sources, limitations, AI-use disclosure). Risk on the dashboard uses *recent-baseline* thresholds (each region's last 3
-years); evaluation used training-only thresholds. Forecasts are labelled as model estimates, not reported cases.
+Seven pages, ordered to answer *what is the problem → which approach worked best → why*:
+1. **Home**: the problem in three sentences, KPI cards (latest weekly cases, % change, highest-risk district, number of
+   High-risk districts) and the national trend with the 2017 record outbreak marked.
+2. **Model comparison**: Bagging vs Boosting vs Stacking, results table grouped by family (MAE, RMSE, R², % vs naive,
+   winner highlighted), % vs naive bar chart by family, normal vs outbreak-week errors, actual vs predicted with model
+   and district dropdowns, a five-point "which approach performed best and why" box, and one line per family.
+3. **District forecast & risk**: history + next-week forecast with a Low / Medium / High badge, risk for all 26 regions.
+4. **Hybrid models**: RF + ARIMA and RF + ANN against their components, with a forecast plot and interpretation.
+5. **Explainability & what-if**: SHAP and feature importance; sliders for last week's cases and rainfall 8 weeks ago.
+6. **Data explorer**: year and district filters, weekly trends, cases by district, summary statistics.
+7. **About**: data sources, methods, limitations, GitHub link and the AI-use disclosure.
+
+Risk uses *recent-baseline* thresholds (each district's last 3 years); evaluation used training-only thresholds.
+Forecasts are labelled as model estimates, not reported cases.
 
 | Home | District forecast | Model comparison |
 |---|---|---|
