@@ -144,7 +144,7 @@ RF + SARIMA hybrid (single weekly series, walk-forward one-step-ahead):
    time-series CV ranks Random Forest first; the test favours combinations. Validation-vs-test rank correlation: 0.74.
 
 The full discussion (bias–variance, stacking diversity, distribution shift, log1p effect, the 5–9 week weather lag and
-its biology) is in [notebooks/07_final_comparison.ipynb](notebooks/07_final_comparison.ipynb), together with research
+its biology) is in [reports/ANALYSIS.md](reports/ANALYSIS.md), together with research
 notes on **RF vs XGBoost / LightGBM / CatBoost** and **tree ensembles on tabular vs image/text data**.
 
 ## Dashboard
@@ -185,7 +185,8 @@ SriLanka-Dengue-Ensemble/
 ├── data/raw/                  downloaded dengue (.rda/.csv) and weather (cached API response)
 ├── data/processed/            cleaned data, feature table, forecast inputs, feature_config.json
 ├── models/                    *.joblib models, results.csv, predictions, registry.json, summary.json
-├── notebooks/01 … 07          data & EDA → features → bagging → boosting → stacking → hybrids → final comparison
+├── notebooks/01 … 07          data & EDA → features → bagging → boosting → stacking → hybrids → final comparison (code + outputs)
+├── reports/ANALYSIS.md         written analysis: key findings, why the models behaved this way, research notes
 ├── reports/figures/           all figures used in notebooks and the dashboard
 ├── src/                       config, data, features, models, evaluate, hybrid, viz (imported by notebooks & app)
 ├── requirements.txt           runtime pins (dashboard + model loading)
