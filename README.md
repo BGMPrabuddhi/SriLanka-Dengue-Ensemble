@@ -2,231 +2,225 @@
 
 **CM4371 Machine Learning & Pattern Recognition · Hands-on project · B. G. M. Prabuddhi**
 
-🔗 **Live dashboard:** _LIVE_URL_PLACEHOLDER_ · 🎥 **Video (≤ 3 min):** _VIDEO_URL_PLACEHOLDER_ · 💻 **Code:** https://github.com/BGMPrabuddhi/SriLanka-Dengue-Ensemble
+**Live dashboard:** _LIVE_URL_PLACEHOLDER_ · **Video:** _VIDEO_URL_PLACEHOLDER_ ·
+**Code:** https://github.com/BGMPrabuddhi/SriLanka-Dengue-Ensemble
 
-Dengue is one of Sri Lanka's largest public-health burdens: in the record year 2017 the Epidemiology Unit recorded
-**174,687 cases**, with a peak of **10,590 cases in a single week**. Every week, case counts arrive for 26 health regions,
-but decisions about where to send fogging teams, hospital capacity and awareness campaigns have to be made *before* the
-next week's cases appear. This project uses weekly district-level dengue data plus lagged weather to **forecast next week's
-cases in every region**, turns the forecast into a **Low / Medium / High risk level**, and compares **bagging, boosting,
-stacking and hybrid** models to find out which forecaster is most reliable, and *why*.
+## 1. The project
 
----
+Dengue is one of Sri Lanka's largest public-health burdens: in the record year 2017 the Epidemiology Unit reported
+**174,687 cases**, with **10,590 cases in a single week**. Case counts arrive every week for 26 health regions, but the
+health ministry has to send fogging teams, hospital capacity and awareness campaigns *before* the next week's cases
+appear.
 
-## Problem statement
-*Regression:* standing at the end of reporting week *t*, predict the number of dengue cases in week *t+1* for each of the
-26 Regional Director of Health Services (RDHS) areas. The forecast is converted into a risk level using each region's
-own history (above its 75th percentile = High, 50th–75th = Medium, otherwise Low). Every model must beat the naive
-forecast *"next week = this week"*.
+This project **forecasts next week's dengue cases in every region** from recent case counts and lagged weather, turns
+each forecast into a **Low / Medium / High risk level**, and compares **bagging, boosting, stacking and hybrid** ensemble
+models to find out which approach is most reliable for this data, and **why** the models behave as they do. The results
+are presented in an interactive Streamlit dashboard.
 
-## Data (all real, Sri Lankan, publicly available)
-| Source | What | Coverage |
+**Task.** Regression: standing at the end of reporting week *t*, predict the number of cases in week *t+1* for each of the
+26 Regional Director of Health Services (RDHS) areas. Every model must beat the naive forecast *"next week = this week"*.
+
+## 2. Data (real, Sri Lankan, public)
+
+| Source | Content | Coverage |
 |---|---|---|
-| **denguedatahub** R package (Talagala, T. S.), dataset `srilanka_weekly_data`, from the Weekly Epidemiological Reports of the Epidemiology Unit, Ministry of Health | weekly dengue cases for 26 RDHS areas | 23 Dec 2006 – 13 Sep 2026 (26,753 rows) |
-| **Open-Meteo Historical Weather API** (ERA5 reanalysis) | daily rainfall, mean temperature, mean relative humidity at each region's main town, aggregated to the reporting weeks | same period |
+| **denguedatahub** R package (Talagala, T. S.), dataset `srilanka_weekly_data`, compiled from the Weekly Epidemiological Reports of the Epidemiology Unit, Ministry of Health | weekly dengue cases for 26 RDHS areas | 23 Dec 2006 – 13 Sep 2026, 26,753 rows |
+| **Open-Meteo Historical Weather API** (ERA5 reanalysis) | daily rainfall, mean temperature and relative humidity at each region's main town, aggregated to the reporting weeks | same period |
 
-The `.rda` file is downloaded automatically and read with `pyreadr`; weather is cached in `data/raw/weather.csv`.
+No API keys are needed; the `.rda` file is downloaded automatically and the weather response is cached in
+`data/raw/weather.csv`.
 
-**Data quality.** Cleaning standardised spelling variants (e.g. `Kalmune` → Kalmunai, mapped to Ampara for weather), unified
-two date formats, and rebuilt year/week from dates (the source labels are wrong around New Year). **596 district-weeks
-(2.2%) were flagged as reporting errors and kept as missing, never invented:** whole missing years (northern regions
-2007–09, Monaragala 2020), a national reporting gap (10 Sep 2022), single-week drop-outs, four weeks that are exact copies
-of the previous week, and three 2026 weeks (30 Mar, 8 Jun and the latest, 7 Sep) in which counts were assigned to the wrong regions. **Outliers:** 3.8% of
-region-weeks are extreme by a per-district IQR rule, but 77% fall in the epidemic years 2017, 2019, 2023 and 2026, and 79%
-occur while at least 3 regions are extreme together. They are real outbreaks, so they are kept (skewness is handled with a
-log1p target) and only reporting errors are flagged.
+**Cleaning.** District spelling variants were standardised (Kalmunai uses Ampara's coordinates for weather), two date
+formats unified, and year/week rebuilt from the dates (the source labels are wrong around New Year).
+**596 district-weeks (2.2%) were reporting errors** and were set to missing, never invented or re-assigned:
 
-## Pipeline
-```mermaid
-flowchart LR
-  A[denguedatahub .rda<br/>weekly cases, 26 regions] --> C[Clean & flag<br/>reporting errors]
-  B[Open-Meteo API<br/>daily weather] --> D[Weekly weather<br/>per region]
-  C --> E[Features<br/>lags 1-4, rolling stats,<br/>weather lags 1-8, calendar]
-  D --> E
-  E --> F[Chronological split<br/>train 2007-21 · val 2022 · test 2023-26]
-  F --> G1[Bagging<br/>Bagged trees · RF · Extra Trees]
-  F --> G2[Boosting<br/>AdaBoost · GB · XGBoost · LightGBM · CatBoost]
-  G1 --> G3[Stacking & Voting]
-  G2 --> G3
-  F --> G4[Hybrids<br/>RF+SARIMA · RF+ANN]
-  G1 --> H[Comparison vs naive<br/>normal vs outbreak weeks · SHAP]
-  G2 --> H
-  G3 --> H
-  G4 --> H
-  H --> I[models/*.joblib + summary.json]
-  I --> J[Streamlit dashboard]
-```
+| Error type | Rule | Examples |
+|---|---|---|
+| Whole missing year | a region reports 0 for a full year but has cases in other years | Kilinochchi & Mullaitivu 2007–09, Monaragala 2020 |
+| National reporting gap | ≥ 20 of 26 regions report 0 while nearby weeks have only a few | 10 Sep 2022 |
+| Single-week dropout | 0 between two weeks with ≥ 10 cases | 25 district-weeks |
+| Copied week | every region identical to the previous week | 21 Jan 2012, 18 Dec 2021, 8 Feb 2025, 22 Jun 2026 |
+| Counts in the wrong regions | ≥ 4 small regions spike > 4× while large regions collapse | 30 Mar, 8 Jun and 7 Sep 2026 |
 
-## Methods
-* **Features (per region, no leakage):** cases in weeks *t … t−3*, 4- and 8-week rolling mean / std, a was-missing count,
-  rainfall / temperature / humidity lagged 1–8 weeks (EDA showed rain and humidity lead cases by ~7–9 weeks), cyclical
-  week-of-year, year, one-hot region. Gaps inside the lag window are forward-filled within the region.
-* **Validation:** strictly chronological. Train 2007–2021, validation 2022, test 31 Dec 2022 – 24 Aug 2026 (the latest
-  2 weeks are excluded because they may still be revised). Hyper-parameters tuned with `RandomizedSearchCV` +
-  `TimeSeriesSplit`; preprocessing inside sklearn `Pipeline`s; `random_state = 42` everywhere. Models are **selected on
-  validation MAE**, never on test.
-* **Target:** log1p(cases), chosen on validation MAE (notebook 02); predictions converted back with `expm1`.
-* **Bagging** (variance reduction): `BaggingRegressor(DecisionTree)`, `RandomForestRegressor` (with OOB score),
-  `ExtraTreesRegressor`.
-* **Boosting** (bias reduction): `AdaBoostRegressor`, `GradientBoostingRegressor`, `XGBRegressor`, `LGBMRegressor`,
-  `CatBoostRegressor`, each with early stopping on 2022.
-* **Stacking:** RF + XGBoost + LightGBM + CatBoost → `RidgeCV`, with *time-ordered* out-of-fold predictions (a small custom
-  class, because sklearn's `StackingRegressor` does not accept `TimeSeriesSplit`); plus a `VotingRegressor`.
-* **Hybrids:** (1) **RF + SARIMA**: SARIMA(1,0,1)(1,0,1)₅₂ chosen by AIC, Random Forest on its residuals, walk-forward
-  one-step-ahead, for the national total and Colombo; (2) **RF + ANN**: MLP on log-scaled inputs combined with RF by a
-  validation-tuned weighted average, and by feeding RF's out-of-fold forecast into the ANN.
-* **Evaluation:** MAE, RMSE, R², sMAPE, training time, **% improvement over naive**, and MAE split into **normal vs outbreak
-  weeks** (actual above the region's training 75th percentile).
+**Outliers.** 3.8% of district-weeks are extreme by a per-district IQR rule, but 77% of them fall in the epidemic years
+2017, 2019, 2023 and 2026, and 79% occur while at least 3 regions are extreme in the same week. They are real outbreaks,
+the very thing an early-warning system must learn, so they are kept; the skewed target is handled with a log1p transform.
 
-## Results (test period 2023–2026, 4,854 region-weeks)
+**What the data shows.** Weekly cases are highly persistent (median lag-1 autocorrelation 0.89). The typical year peaks
+around week 28 (South-West monsoon) with a second rise in December–January. Colombo, Gampaha and Kandy account for about
+43% of all cases. After removing district averages, rainfall and humidity correlate most with cases **7–9 weeks later**
+(rain → breeding sites → mosquito development → virus incubation in the mosquito and in people → reporting).
 
-### Core comparison: Bagging vs Boosting vs Stacking
-| Strategy | Model | Test MAE | vs naive | MAE normal weeks | MAE outbreak weeks |
+## 3. Method
+
+* **Features** (per region, using only week *t* and earlier): cases in the last 4 weeks, 4- and 8-week rolling mean and
+  standard deviation, a count of missing lag weeks, rainfall / temperature / humidity lagged 1–8 weeks, cyclical
+  week-of-year, year and one-hot region (64 model columns). Gaps inside the lag window are forward-filled within the region.
+* **Time-based split, no leakage:** train 2007–2021 (19,731 rows), validation 2022 (1,328), test 31 Dec 2022 –
+  24 Aug 2026 (4,854). The latest weeks are excluded from testing because they may still be revised.
+* **Tuning:** `RandomizedSearchCV` with `TimeSeriesSplit`; preprocessing inside sklearn `Pipeline`s; `random_state = 42`.
+  Models are **selected on validation MAE**, never on test.
+* **Target:** log1p(cases), chosen on validation MAE; predictions converted back with `expm1`.
+* **Bagging** (reduces variance): bagged decision trees, Random Forest (with out-of-bag score), Extra Trees.
+* **Boosting** (reduces bias): AdaBoost, Gradient Boosting, XGBoost, LightGBM, CatBoost, with early stopping on 2022.
+* **Stacking:** Random Forest + XGBoost + LightGBM + CatBoost → RidgeCV meta-learner, trained on *time-ordered*
+  out-of-fold predictions (sklearn's `StackingRegressor` does not accept `TimeSeriesSplit`); plus a `VotingRegressor`.
+* **Hybrids:** (1) RF + SARIMA: SARIMA(1,0,1)(1,0,1)₅₂ chosen by AIC, a Random Forest models its residuals, walk-forward
+  one-step-ahead on the national total and Colombo; (2) RF + ANN: an MLP (log-scaled inputs) combined with the forest by a
+  validation-tuned weighted average, and by feeding the forest's forecast into the network.
+* **Evaluation:** MAE, RMSE, R², sMAPE, % improvement over naive, and MAE split into **normal vs outbreak weeks**
+  (actual cases above the region's training 75th percentile; 55% of the test weeks).
+
+## 4. Results (test period 2023–2026)
+
+### Bagging vs Boosting vs Stacking
+
+| Strategy | Model | Test MAE | vs naive | Normal weeks | Outbreak weeks |
 |---|---|---|---|---|---|
 | Baseline | Naive (next week = this week) | 14.95 | — | 7.43 | 21.06 |
-| **Bagging** | Random Forest | 14.52 | +2.9% | 6.07 | 21.39 |
-| **Boosting** | XGBoost | 16.51 | −10.4% | 5.93 | 25.11 |
-| **Stacking** | RF + XGBoost + LightGBM + CatBoost → RidgeCV | **14.23** | **+4.8%** | 6.69 | **20.37** |
-
-* **Bagging** averages hundreds of deep trees (lower variance): 18% better than naive in normal weeks, level in outbreaks.
-* **Boosting** removes bias step by step and is the most accurate in calm weeks, but under-forecasts surges. The cause is
-  the log-cases target, not boosting: the same XGBoost trained on raw cases scores **14.37** (+3.9%, better than Random
-  Forest). Log-cases was chosen on the calm 2022 validation year, which hid this cost; we report it rather than switch
-  after seeing the test set.
-* **Stacking** wins even though the base models' errors are 98% correlated: its meta-learner weights sum to 1.05, lifting
-  forecasts and correcting part of the shared outbreak under-forecast (best outbreak-week error of the three).
+| Bagging | Random Forest | 14.52 | +2.9% | 6.07 | 21.39 |
+| Boosting | XGBoost | 16.51 | −10.4% | 5.93 | 25.11 |
+| **Stacking** | **RF + XGBoost + LightGBM + CatBoost → RidgeCV** | **14.23** | **+4.8%** | 6.69 | **20.37** |
 
 ![Core comparison](reports/figures/core_bagging_boosting_stacking.png)
 
 ### All models
-| Family | Model | Test MAE | Test RMSE | R² | MAE vs naive | MAE normal wks | MAE outbreak wks | Val MAE (2022) |
-|---|---|---|---|---|---|---|---|---|
-| Baseline | Naive (last week) | 14.95 | 37.59 | 0.867 | +0.0% | 7.43 | 21.06 | 11.55 |
-| Baseline | Seasonal naive (last year) | 37.75 | 95.69 | 0.140 | -152.5% | 17.63 | 54.12 | 20.11 |
-| Bagging | **Extra Trees** ⭐ deployed | **14.51** | 39.09 | 0.857 | +3.0% | 6.20 | 21.26 | **10.34** |
-| Bagging | Random Forest | 14.52 | 37.47 | 0.868 | +2.9% | 6.07 | 21.39 | 10.39 |
-| Bagging | Bagging (Decision Trees) | 14.70 | 38.28 | 0.862 | +1.7% | 6.03 | 21.75 | 10.45 |
-| Boosting | Gradient Boosting | 15.45 | 43.01 | 0.826 | -3.3% | 5.89 | 23.22 | 10.43 |
-| Boosting | CatBoost | 15.71 | 44.10 | 0.817 | -5.1% | 6.14 | 23.50 | 10.56 |
-| Boosting | AdaBoost | 16.02 | 47.36 | 0.789 | -7.2% | 6.33 | 23.90 | 10.48 |
-| Boosting | XGBoost | 16.51 | 51.89 | 0.747 | -10.4% | 5.93 | 25.11 | 10.44 |
-| Boosting | LightGBM | 18.59 | 50.95 | 0.756 | -24.4% | 5.98 | 28.85 | 10.58 |
-| Stacking | Stacking (RF+XGB+LGBM+Cat → Ridge) | 14.23 | 36.88 | 0.872 | +4.8% | 6.69 | 20.37 | 10.46 |
-| Stacking | Voting (RF+XGB+LGBM+Cat, mean) | 15.61 | 43.19 | 0.825 | -4.4% | 5.87 | 23.53 | 10.41 |
-| Neural net | ANN (MLP) | 17.44 | 65.87 | 0.593 | -16.7% | 6.89 | 26.02 | 10.94 |
-| Hybrid | **Hybrid RF+ANN (weighted 0.8/0.2)** 🏆 best on test | **14.19** | 36.89 | 0.872 | **+5.1%** | 6.00 | 20.85 | 10.36 |
-| Hybrid | Hybrid RF→ANN (RF as input) | 16.38 | 53.63 | 0.730 | -9.5% | 6.45 | 24.45 | 10.77 |
 
-⭐ **Deployed model** = lowest validation MAE (the rule fixed before testing): **Extra Trees**.
-🏆 **Best on test** = **Random Forest + neural network hybrid**.
+| Family | Model | Test MAE | RMSE | R² | vs naive | Normal weeks | Outbreak weeks |
+|---|---|---|---|---|---|---|---|
+| Baseline | Naive (last week) | 14.95 | 37.59 | 0.867 | — | 7.43 | 21.06 |
+| Baseline | Seasonal naive (last year) | 37.75 | 95.69 | 0.140 | −152.5% | 17.63 | 54.12 |
+| Bagging | Extra Trees *(deployed)* | 14.51 | 39.09 | 0.857 | +3.0% | 6.20 | 21.26 |
+| Bagging | Random Forest | 14.52 | 37.47 | 0.868 | +2.9% | 6.07 | 21.39 |
+| Bagging | Bagged decision trees | 14.70 | 38.28 | 0.862 | +1.7% | 6.03 | 21.75 |
+| Boosting | Gradient Boosting | 15.45 | 43.01 | 0.826 | −3.3% | 5.89 | 23.22 |
+| Boosting | CatBoost | 15.71 | 44.10 | 0.817 | −5.1% | 6.14 | 23.50 |
+| Boosting | AdaBoost | 16.02 | 47.36 | 0.789 | −7.2% | 6.33 | 23.90 |
+| Boosting | XGBoost | 16.51 | 51.89 | 0.747 | −10.4% | 5.93 | 25.11 |
+| Boosting | LightGBM | 18.59 | 50.95 | 0.756 | −24.4% | 5.98 | 28.85 |
+| Stacking | Stacking → RidgeCV | 14.23 | 36.88 | 0.872 | +4.8% | 6.69 | 20.37 |
+| Stacking | Voting (mean) | 15.61 | 43.19 | 0.825 | −4.4% | 5.87 | 23.53 |
+| Neural net | ANN (MLP) | 17.44 | 65.87 | 0.593 | −16.7% | 6.89 | 26.02 |
+| Hybrid | **RF + ANN, weighted 0.8 / 0.2** *(best on test)* | **14.19** | 36.89 | 0.872 | **+5.1%** | 6.00 | 20.85 |
+| Hybrid | RF → ANN (forest forecast as input) | 16.38 | 53.63 | 0.730 | −9.5% | 6.45 | 24.45 |
 
-RF + SARIMA hybrid (single weekly series, walk-forward one-step-ahead):
-
-| Series | Naive | SARIMA alone | RF alone | **Hybrid RF+SARIMA** |
+| RF + SARIMA (MAE, cases/week) | Naive | SARIMA alone | RF alone | Hybrid |
 |---|---|---|---|---|
-| National total (MAE, cases/week) | 210.7 | 214.8 (−2.0%) | 248.4 (−17.9%) | **202.2 (+4.0%)** |
-| Colombo (MAE) | 58.1 | 60.5 (−4.1%) | 62.6 (−7.7%) | 62.0 (−6.6%) |
+| National total | 210.7 | 214.8 (−2.0%) | 248.4 (−17.9%) | **202.2 (+4.0%)** |
+| Colombo | 58.1 | 60.5 (−4.1%) | 62.6 (−7.7%) | 62.0 (−6.6%) |
 
-## Key findings: which approach performed best, and why
-1. **Persistence is king.** Weekly cases have a lag-1 autocorrelation of 0.89, so "same as last week" (MAE 14.95) is a
-   tough benchmark; recent cases carry ~85% of the models' SHAP attribution, weather ~8%.
-2. **Bagging is the most reliable single family** (+3% vs naive). Averaging hundreds of deep trees reduces variance: forecasts
-   are 17–19% more accurate than naive in normal weeks and level with naive in outbreak weeks.
-3. **Boosting is best in calm weeks but worst in outbreaks** (−3% to −24%). The main cause is the log1p target: it makes
-   boosted forecasts of big outbreaks too low (retransformation bias). On raw cases XGBoost scores 14.37 instead of 16.51
-   and LightGBM 14.60 instead of 18.59. Only 0.4% of test weeks exceeded a region's training maximum, so "trees cannot
-   extrapolate" is a minor factor.
-4. **Combining models helps when it corrects that shared under-prediction.** Base models' errors are 98% correlated, so
-   voting gains nothing (−4.4%), but stacking's meta-weights sum to 1.05 and scale forecasts up (+4.8%); the RF + ANN hybrid
-   (+5.1%, best on test) blends a forest that forecasts too low with a network that can over-shoot. RF + SARIMA beats naive
-   on the national total (+4.0%) while each part alone does not.
-5. **Model selection needs outbreak years in validation.** The calm 2022 validation year picked Extra Trees; multi-year
-   time-series CV ranks Random Forest first; the test favours combinations. Validation-vs-test rank correlation: 0.74.
+The deployed model (Extra Trees) was chosen in advance by the lowest 2022 validation MAE; the RF + ANN hybrid had the
+lowest test error.
 
-The full discussion (bias–variance, stacking diversity, distribution shift, log1p effect, the 5–9 week weather lag and
-its biology) is in [reports/ANALYSIS.md](reports/ANALYSIS.md), together with research
-notes on **RF vs XGBoost / LightGBM / CatBoost** and **tree ensembles on tabular vs image/text data**.
+## 5. Why the models behaved this way
 
-## Dashboard
+1. **The naive baseline is strong because dengue is persistent.** This week is the best single guide to next week, so
+   recent case counts carry about 85% of every tree model's SHAP attribution (weather about 8%). Beating "same as last
+   week" by a few percent is a real gain.
+2. **Bagging reduces variance.** Averaging hundreds of deep, de-correlated trees cut validation error by 14–27% compared
+   with a single tree. Forecasts are 17–19% more accurate than naive in normal weeks and level with naive in outbreaks,
+   because an average of past similar weeks moves more slowly than a fast-rising epidemic. Random Forest also has the
+   lowest time-series cross-validation error over 2007–2021 (13.56). Its out-of-bag R² (0.84, log scale) is optimistic
+   compared with the time-ordered 2022 validation (0.75) because OOB samples random weeks inside the training period.
+3. **Boosting reduces bias but under-forecast the outbreaks.** Boosted models were the most accurate in calm weeks
+   (MAE 5.89–6.33) and the worst in outbreak weeks. The cause is the **log1p target**, not boosting itself: a model trained
+   on log-cases predicts something close to a geometric mean, so `expm1` gives forecasts that are too low when values are
+   large and volatile (Jensen's inequality). Trained on raw cases, XGBoost scores **14.37** (better than Random Forest) and
+   LightGBM 14.60, instead of 16.51 and 18.59. Log1p was chosen correctly on the calm 2022 validation year, which hid this
+   cost; it is reported here rather than switched after seeing the test set.
+4. **Stacking helps only if base learners make different errors.** The four base models' validation errors are 98%
+   correlated, so simple voting gained nothing (−4.4%). Stacking still came out best of the three strategies (+4.8%)
+   because its RidgeCV weights (RF 0.37, XGBoost 0.40, CatBoost 0.25, LightGBM 0.02) sum to 1.05, which lifts forecasts and
+   corrects part of the shared outbreak under-forecast.
+5. **Hybrids work when their parts fail in different ways.** In outbreaks the forest forecasts too low while the neural
+   network, which extrapolates, can over-shoot, so the 0.8 / 0.2 blend is the best model on test (+5.1%). SARIMA + RF beats
+   naive on the national total (+4.0%) while each part alone does not. Feeding the forest into the network (RF → ANN)
+   amplified errors instead (−9.5%).
+6. **Record outbreaks and distribution shift.** The test years were outbreak-heavy (mean 52.6 cases per region-week vs
+   29.9 in training). Trees cannot forecast above the values they were trained on, but only 0.4% of test weeks exceeded a
+   region's training maximum; the bigger problem was that outbreak-level weeks were rare in training, so leaves average them
+   with calmer weeks. Validation and test rankings agree only moderately (Spearman 0.74), so validation should span several
+   seasons including an epidemic year.
+
+## 6. Research notes
+
+### Random Forest vs gradient boosting (XGBoost, LightGBM, CatBoost)
+
+| | Random Forest (bagging) | XGBoost | LightGBM | CatBoost |
+|---|---|---|---|---|
+| How trees are built | deep trees in parallel on bootstrap samples with random feature subsets; averaged | shallow trees in sequence fitting the loss gradient; L1/L2 regularisation, second-order steps | same idea, leaf-wise growth on feature histograms | same idea, ordered boosting and symmetric trees |
+| Main error reduced | variance | bias | bias | bias, with less over-fitting on small data |
+| Tuning effort | low; more trees never hurt | high; needs early stopping | high; limit `num_leaves` | moderate; strong defaults |
+| Categorical features | need encoding | need encoding | native | native (ordered target statistics) |
+| In this project | most reliable single family (+2.9%) | best in calm weeks, hurt by the log target (−10.4%) | same pattern (−24.4%) | −5.1% |
+
+### Tree ensembles on tabular vs image/text data
+* **Tabular data (like this project):** columns are heterogeneous (counts, rainfall, a region, a week). Trees split one
+  feature at a time, need no scaling, are robust to skew and outliers, capture interactions automatically, handle missing
+  values and give feature importances and SHAP values. They still beat deep networks on typical medium-sized tabular data
+  (Grinsztajn et al., 2022). Limitations: step-wise predictions, no extrapolation beyond the training range, no notion of
+  time without hand-made lags, and large forests are big files.
+* **Images and text:** meaning comes from local spatial or sequential patterns (edges, shapes, word order) that repeat
+  anywhere in the input. CNNs and Transformers are built for this; single pixels or tokens carry little information on their
+  own and inputs are very high-dimensional, so axis-aligned tree splits are inefficient. Trees remain useful on top of
+  learned embeddings or for accompanying metadata.
+
+## 7. Dashboard
+
 Seven pages, ordered to answer *what is the problem → which approach worked best → why*:
-1. **Home**: the problem in three sentences, KPI cards (latest weekly cases, % change, highest-risk district, number of
-   High-risk districts) and the national trend with the 2017 record outbreak marked.
-2. **Model comparison**: Bagging vs Boosting vs Stacking, results table grouped by family (MAE, RMSE, R², % vs naive,
-   winner highlighted), % vs naive bar chart by family, normal vs outbreak-week errors, actual vs predicted with model
-   and district dropdowns, a five-point "which approach performed best and why" box, and one line per family.
-3. **District forecast & risk**: history + next-week forecast with a Low / Medium / High badge, risk for all 26 regions.
-4. **Hybrid models**: RF + ARIMA and RF + ANN against their components, with a forecast plot and interpretation.
-5. **Explainability & what-if**: SHAP and feature importance; sliders for last week's cases and rainfall 8 weeks ago.
-6. **Data explorer**: year and district filters, weekly trends, cases by district, summary statistics.
-7. **About**: data sources, methods, limitations, GitHub link and the AI-use disclosure.
+**Home** (the problem, KPI cards, national trend with the 2017 record outbreak), **Model comparison** (bagging vs boosting
+vs stacking, results grouped by family, % vs naive, normal vs outbreak errors, actual vs predicted, five-point "best and
+why"), **District forecast & risk** (history, next-week forecast and risk badge, all 26 regions), **Hybrid models**,
+**Explainability & what-if** (SHAP, feature importance, live sliders), **Data explorer** (filters, trends, district
+totals, summary statistics) and **About**. Risk thresholds are each district's 50th / 75th percentile over the last 3
+years. Forecasts are model estimates, not reported cases.
 
-Risk uses *recent-baseline* thresholds (each district's last 3 years); evaluation used training-only thresholds.
-Forecasts are labelled as model estimates, not reported cases.
+## 8. Limitations
 
-| Home | District forecast | Model comparison |
-|---|---|---|
-| _screenshot placeholder_ | _screenshot placeholder_ | _screenshot placeholder_ |
+One-week horizon only; the latest weeks may be revised by late reports; the source contains reporting errors that simple
+rules may not all catch; no data on mosquito surveys, serotypes, population (cases are counts, not incidence) or human
+movement; one weather point per region; models trained on 2007–2021 only; a single, outbreak-dominated test period.
 
-## How to run locally
+## 9. Running the project
+
 ```powershell
 git clone https://github.com/BGMPrabuddhi/SriLanka-Dengue-Ensemble.git
 cd SriLanka-Dengue-Ensemble
-python -m venv .venv                      # Python 3.12
-.\.venv\Scripts\Activate.ps1              # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt           # enough for the dashboard
+python -m venv .venv                       # Python 3.12
+.\.venv\Scripts\Activate.ps1               # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt            # dashboard
+pip install -r requirements-dev.txt        # notebooks (optional)
+copy .env.example .env                     # local settings (no secrets required)
 streamlit run app/app.py
 ```
-To re-run the analysis: `pip install -r requirements-dev.txt`, then run the notebooks in order (01 → 07) or
-`jupyter nbconvert --to notebook --execute --inplace notebooks/*.ipynb`. Notebook 01 downloads the data; the whole pipeline
-takes roughly 25 minutes on a laptop.
+Notebooks `01` → `07` reproduce the whole pipeline (about 20 minutes). On Streamlit Community Cloud, select
+**Python 3.12** so the saved models load with the pinned library versions.
 
-**Python version:** models were trained with **Python 3.12** and the exact library pins in `requirements.txt`. When deploying
-on Streamlit Community Cloud, choose **Python 3.12** under *Advanced settings* so the saved `.joblib` models load with the
-same versions.
-
-## Repository structure
 ```
-SriLanka-Dengue-Ensemble/
-├── app/app.py                 Streamlit dashboard
-├── .streamlit/config.toml     dashboard theme
-├── data/raw/                  downloaded dengue (.rda/.csv) and weather (cached API response)
-├── data/processed/            cleaned data, feature table, forecast inputs, feature_config.json
-├── models/                    *.joblib models, results.csv, predictions, registry.json, summary.json
-├── notebooks/01 … 07          data & EDA → features → bagging → boosting → stacking → hybrids → final comparison (code + outputs)
-├── reports/ANALYSIS.md         written analysis: key findings, why the models behaved this way, research notes
-├── reports/figures/           all figures used in notebooks and the dashboard
-├── src/                       config, data, features, models, evaluate, hybrid, viz (imported by notebooks & app)
-├── requirements.txt           runtime pins (dashboard + model loading)
-├── requirements-dev.txt       + notebooks, SHAP, data download
-├── AI_DISCLOSURE.md · VIDEO_SCRIPT.md · README.md
+├── app/app.py                Streamlit dashboard (UI)
+├── .streamlit/config.toml    dashboard theme
+├── src/                      backend: config, data, features, models, evaluate, hybrid, viz
+├── notebooks/01 … 07         data & EDA → features → bagging → boosting → stacking → hybrids → final comparison
+├── data/raw, data/processed  downloaded and cleaned data, feature table
+├── models/                   saved models (.joblib), results.csv, predictions, summary.json
+├── reports/figures/          figures used by the notebooks and dashboard
+├── requirements.txt, requirements-dev.txt, .env.example
+└── AI_DISCLOSURE.md
 ```
 
-## Limitations & future work
-* One-week horizon only; planners often need 2–4 weeks of lead time (multi-step forecasting is the next step).
-* Recent weeks may be revised by late reports; the source contains reporting errors that simple rules may not all catch.
-* No data on mosquito surveys, dengue serotypes, population (cases are counts, not incidence) or human mobility.
-* Weather from one grid point per region; models trained on 2007–2021 only (production use should retrain on all data).
-* Validation used one calm year; rolling-origin validation over several seasons would select models more robustly.
-* Future work: incidence per 100,000, quantile/interval forecasts for alert thresholds, raw-target or bias-corrected
-  boosting, spatial features from neighbouring regions.
+## 10. AI-use disclosure
 
-## AI-use disclosure
-This project was developed **with the help of generative AI (Claude Code by Anthropic, in VS Code; Claude chat for
-planning)**. AI generated most of the code, notebooks, dashboard and documentation drafts. The student (B. G. M. Prabuddhi)
-chose the problem and data, set the requirements, made or approved the data and modelling decisions, reviewed and ran all
-code, and interpreted the results. Every source file and notebook carries a disclosure note; details are in
-[AI_DISCLOSURE.md](AI_DISCLOSURE.md).
+Developed with the help of generative AI (Claude Code by Anthropic in VS Code; Claude chat for planning), which generated
+most of the code, notebooks, dashboard and documentation. The student, B. G. M. Prabuddhi, chose the problem and data,
+set the requirements, made or approved the data and modelling decisions, reviewed and ran all code, and interpreted the
+results. Details: [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
 
 ## References
-* Talagala, T. S. *denguedatahub: A Tidy Format Datasets of Dengue by Country.* R package. https://github.com/thiyangt/denguedatahub
-* Epidemiology Unit, Ministry of Health, Sri Lanka. *Weekly Epidemiological Report.* https://www.epid.gov.lk
-* Zippenfenig, P. (2023). *Open-Meteo.com Weather API.* https://open-meteo.com · Hersbach, H. et al. (2020). The ERA5 global reanalysis. *QJRMS*, 146, 1999–2049.
-* Breiman, L. (1996). Bagging predictors. *Machine Learning*, 24, 123–140. · Breiman, L. (2001). Random forests. *Machine Learning*, 45, 5–32.
-* Geurts, P., Ernst, D., Wehenkel, L. (2006). Extremely randomized trees. *Machine Learning*, 63, 3–42.
-* Freund, Y., Schapire, R. (1997). A decision-theoretic generalization of on-line learning and an application to boosting. *JCSS*, 55, 119–139.
-* Friedman, J. (2001). Greedy function approximation: a gradient boosting machine. *Annals of Statistics*, 29, 1189–1232.
-* Chen, T., Guestrin, C. (2016). XGBoost. *KDD*. · Ke, G. et al. (2017). LightGBM. *NeurIPS*. · Prokhorenkova, L. et al. (2018). CatBoost. *NeurIPS*.
-* Wolpert, D. (1992). Stacked generalization. *Neural Networks*, 5, 241–259.
-* Zhang, G. P. (2003). Time series forecasting using a hybrid ARIMA and neural network model. *Neurocomputing*, 50, 159–175.
-* Lundberg, S., Lee, S.-I. (2017). A unified approach to interpreting model predictions (SHAP). *NeurIPS*.
-* Grinsztajn, L., Oyallon, E., Varoquaux, G. (2022). Why do tree-based models still outperform deep learning on tabular data? *NeurIPS Datasets & Benchmarks*.
+
+Talagala, T. S., *denguedatahub* (R package) · Epidemiology Unit, Ministry of Health, Sri Lanka, *Weekly Epidemiological
+Report* · Zippenfenig, P. (2023), *Open-Meteo.com Weather API*; Hersbach et al. (2020), ERA5, *QJRMS* 146 · Breiman (1996,
+2001), Bagging; Random Forests · Geurts et al. (2006), Extremely randomized trees · Freund & Schapire (1997), AdaBoost ·
+Friedman (2001), Gradient boosting · Chen & Guestrin (2016), XGBoost · Ke et al. (2017), LightGBM · Prokhorenkova et al.
+(2018), CatBoost · Wolpert (1992), Stacked generalization · Zhang (2003), Hybrid ARIMA–neural network · Lundberg & Lee
+(2017), SHAP · Grinsztajn, Oyallon & Varoquaux (2022), Why do tree-based models still outperform deep learning on tabular
+data?

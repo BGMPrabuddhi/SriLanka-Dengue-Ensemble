@@ -22,3 +22,6 @@ catboost_info/
 
 # NOTE: data/ and models/ are intentionally committed (small files) so the
 # deployed app runs without retraining or calling external APIs.
+
+# Local environment file (copy of .env.example)
+.env
