@@ -91,12 +91,19 @@ div[data-testid="stVerticalBlockBorderWrapper"]:not(.st-emotion-cache-0) {{
 /* sidebar */
 section[data-testid="stSidebar"] {{ background: linear-gradient(180deg, #0d366b 0%, #14467f 100%); }}
 section[data-testid="stSidebar"] * {{ color: #e9eff8 !important; }}
-section[data-testid="stSidebar"] div[role="radiogroup"] {{ gap: 2px; }}
-section[data-testid="stSidebar"] div[role="radiogroup"] label {{ padding: 9px 12px; border-radius: 10px; width: 100%;
-       transition: background .15s ease; }}
-section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {{ background: rgba(255,255,255,0.08); }}
-section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {{ background: rgba(255,255,255,0.18); }}
-section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p {{ font-weight: 700; }}
+/* navigation items styled as buttons */
+section[data-testid="stSidebar"] div[role="radiogroup"] {{ display: flex; flex-direction: column; gap: 8px; }}
+section[data-testid="stSidebar"] div[role="radiogroup"] label {{
+       padding: 10px 14px; border-radius: 10px; width: 100%; margin: 0; cursor: pointer;
+       background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14);
+       box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+       transition: background .15s ease, transform .15s ease, box-shadow .15s ease; }}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
+       background: rgba(255,255,255,0.14); transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,0.24); }}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {{
+       background: #ffffff; border-color: #ffffff; box-shadow: 0 6px 16px rgba(0,0,0,0.28); }}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p {{ color: #0d366b !important;
+       font-weight: 700; }}
 section[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child {{ display: none; }}
 .brand {{ padding: 6px 4px 14px; }}
 .brand .logo {{ font-size: 1.35rem; font-weight: 700; }}
