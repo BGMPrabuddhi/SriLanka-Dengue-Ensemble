@@ -653,9 +653,6 @@ point per region; the 2023–2026 test years were dominated by outbreaks.
 """)
     st.markdown(f'<div class="note">💻 <b>Code:</b> <a href="{config.GITHUB_REPO_URL}">{config.GITHUB_REPO_URL}</a></div>',
                 unsafe_allow_html=True)
-    note("🤖 <b>AI-use disclosure.</b> This project was built with the help of generative AI (Claude Code by Anthropic) "
-         "for the code, notebooks, this dashboard and documentation. The student, B. G. M. Prabuddhi, chose the problem "
-         "and data, made or approved the data and modelling decisions, and reviewed, ran and interpreted all results.")
 
 
 # ====================================================================== navigation
