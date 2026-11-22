@@ -28,10 +28,10 @@ forecast *"next week = this week"*.
 The `.rda` file is downloaded automatically and read with `pyreadr`; weather is cached in `data/raw/weather.csv`.
 
 **Data quality.** Cleaning standardised spelling variants (e.g. `Kalmune` → Kalmunai, mapped to Ampara for weather), unified
-two date formats, and rebuilt year/week from dates (the source labels are wrong around New Year). **570 district-weeks
-(2.1%) were flagged as reporting errors and kept as missing, never invented:** whole missing years (northern regions
+two date formats, and rebuilt year/week from dates (the source labels are wrong around New Year). **596 district-weeks
+(2.2%) were flagged as reporting errors and kept as missing, never invented:** whole missing years (northern regions
 2007–09, Monaragala 2020), a national reporting gap (10 Sep 2022), single-week drop-outs, four weeks that are exact copies
-of the previous week, and two 2026 weeks in which counts were assigned to the wrong regions. **Outliers:** 3.8% of
+of the previous week, and three 2026 weeks (30 Mar, 8 Jun and the latest, 7 Sep) in which counts were assigned to the wrong regions. **Outliers:** 3.8% of
 region-weeks are extreme by a per-district IQR rule, but 77% fall in the epidemic years 2017, 2019, 2023 and 2026, and 79%
 occur while at least 3 regions are extreme together. They are real outbreaks, so they are kept (skewness is handled with a
 log1p target) and only reporting errors are flagged.

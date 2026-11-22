@@ -21,7 +21,7 @@ Some numbers are not "no dengue" or "a real count" but artefacts of reporting. F
 | `full_year` | a region reports **0 for a whole year** but has cases in other years | Kilinochchi & Mullaitivu 2007-09 (end of the civil war), Monaragala 2020 |
 | `gap_week` | **≥ 20 of 26 regions report 0** in one week while neighbouring weeks have only a few | 10 Sep 2022 (23 regions vs 1-6 nearby). Mid-2012 has a week with 20 zeros, but its neighbours have 13-19, so it is *not* flagged |
 | `dropout` | one region reports **0 between two weeks with ≥ 10 cases** (a partial report) | Kandy 55 → 1 → 92 type patterns, e.g. 22 Apr 2023 |
-| `scrambled` | **≥ 4 regions jump above 4× both neighbouring weeks** while large regions collapse: counts were put against the wrong regions | 30 Mar 2026 and 8 Jun 2026 (no other week in 20 years has more than 2 such regions) |
+| `scrambled` | **≥ 4 regions jump above 4× both neighbouring weeks** while large regions collapse: counts were put against the wrong regions | 30 Mar 2026 and 8 Jun 2026 (no other week in 20 years has more than 2 such regions); the latest week, 7 Sep 2026, has no following week, so it is checked against the previous week and must also show >= 3 large regions collapsing (a combination that never occurs in 2007-2025) |
 | `duplicate` | **every** region's count is identical to the previous week (a copied report) | 21 Jan 2012, 18 Dec 2021, 8 Feb 2025, 22 Jun 2026 |
 
 These rows are set to `NaN` with `missing_report = True` and a `missing_reason`. We do **not** impute or re-assign
@@ -42,9 +42,9 @@ Skewness is handled later with a log1p target (notebook 02), not by removing dat
 * **Data obtained automatically and unaltered:** 26,753 weekly reports for **26 RDHS regions** from
   **23 Dec 2006 to 13 Sep 2026**, plus Open-Meteo weather for every region-week (no gaps).
 * **Cleaning:** 3 spelling variants fixed, 2 date formats unified, and year/week rebuilt from dates
-  (the source labels are inconsistent at New Year). **570 district-weeks (2.13%) flagged as reporting errors /
+  (the source labels are inconsistent at New Year). **596 district-weeks (2.23%) flagged as reporting errors /
   missing reports**: whole missing years (366: northern regions 2007-2009, Monaragala 2020), copied weeks (104: 4 weeks
-  identical to the week before), counts assigned to the wrong regions (52: 30 Mar and 8 Jun 2026), single-week
+  identical to the week before), counts assigned to the wrong regions (78: 30 Mar, 8 Jun and 7 Sep 2026), single-week
   dropouts (25) and the 10 Sep 2022 national gap (23). They are left as missing, not imputed or re-assigned.
 * **Outliers are epidemics, so they are kept.** 1,000 district-weeks (3.8%) are extreme by a per-district IQR rule
   (> Q3 + 3·IQR), but 77% of them fall in the four epidemic years (2017, 2019, 2023, 2026) and 79% occur while at least
@@ -318,8 +318,8 @@ explains why the ranking came out as it did here.
 ### Limitations
 * **Reporting delays and revisions:** the most recent weeks may still increase as late notifications arrive (we
   excluded the last 2 weeks from testing for this reason); the dashboard's latest week can be an under-count.
-* **Reporting errors in the source:** 570 district-weeks (2.1%) had to be flagged as missing, including whole missing
-  years, copied weeks and two 2026 weeks whose counts were assigned to the wrong regions. Detection rules can miss
+* **Reporting errors in the source:** 596 district-weeks (2.2%) had to be flagged as missing, including whole missing
+  years, copied weeks and three 2026 weeks whose counts were assigned to the wrong regions. Detection rules can miss
   subtler errors. We did not impute targets; lag gaps are median-imputed with was-missing flags.
 * **Only one week ahead:** health planning often needs 2-4 weeks of lead time; accuracy will drop at longer horizons.
 * **No mobility, serotype, vector-index or population data:** serotype switches (e.g. DENV-3 re-emergence) and human
