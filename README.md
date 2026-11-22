@@ -204,8 +204,7 @@ Notebooks `01` → `07` reproduce the whole pipeline (about 20 minutes). On Stre
 ├── data/raw, data/processed  downloaded and cleaned data, feature table
 ├── models/                   saved models (.joblib), results.csv, predictions, summary.json
 ├── reports/figures/          figures used by the notebooks and dashboard
-├── requirements.txt, requirements-dev.txt, .env.example
-└── AI_DISCLOSURE.md
+└── requirements.txt, requirements-dev.txt, .env.example
 ```
 
 ## 10. AI-use disclosure
@@ -213,7 +212,7 @@ Notebooks `01` → `07` reproduce the whole pipeline (about 20 minutes). On Stre
 Developed with the help of generative AI (Claude Code by Anthropic in VS Code; Claude chat for planning), which generated
 most of the code, notebooks, dashboard and documentation. The student, B. G. M. Prabuddhi, chose the problem and data,
 set the requirements, made or approved the data and modelling decisions, reviewed and ran all code, and interpreted the
-results. Details: [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
+results.
 
 ## References
 
