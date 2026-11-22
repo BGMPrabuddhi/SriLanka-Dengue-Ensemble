@@ -341,11 +341,10 @@ def page_models():
     with st.container(border=True):
         tbl = RES[["family", "model", "MAE", "RMSE", "R2", "MAE_vs_naive_pct"]].rename(
             columns={"family": "Family", "model": "Model", "R2": "R²", "MAE_vs_naive_pct": "% vs naive"})
-        tbl.insert(0, "", tbl["Family"].map(FAMILY_ICON))
         st.dataframe(fmt_table(tbl, {BEST_TEST, DEPLOYED}), hide_index=True, use_container_width=True,
                      height=36 * len(tbl) + 38)
-        st.caption(f"🏆 **{BEST_TEST}**: lowest test error. ⭐ **{DEPLOYED}**: chosen in advance by the 2022 validation "
-                   "error and used for the forecasts on this dashboard.")
+        st.caption(f"Highlighted: **{BEST_TEST}** (lowest test error) and **{DEPLOYED}** (chosen in advance by the "
+                   "2022 validation error and used for the forecasts on this dashboard).")
 
     section("Improvement over the naive rule", "Bars to the right of 0 beat “next week = this week”.")
     with st.container(border=True):
@@ -652,13 +651,13 @@ point per region; the 2023–2026 test years were dominated by outbreaks.
 
 
 # ====================================================================== navigation
-PAGES = {"🏠  Home": page_home, "🏆  Model comparison": page_models, "📍  District forecast & risk": page_district,
-         "🔗  Hybrid models": page_hybrids, "🔍  Explainability & what-if": page_explain,
-         "📊  Data explorer": page_explorer, "ℹ️  About": page_about}
-st.sidebar.markdown('<div class="brand"><div class="logo">🦟 Dengue Early Warning</div>'
+PAGES = {"Home": page_home, "Model comparison": page_models, "District forecast & risk": page_district,
+         "Hybrid models": page_hybrids, "Explainability & what-if": page_explain, "Data explorer": page_explorer,
+         "About": page_about}
+st.sidebar.markdown('<div class="brand"><div class="logo">Dengue Early Warning</div>'
                     '<div class="tag">Sri Lanka · next-week forecasts for 26 regions</div></div>', unsafe_allow_html=True)
 page = st.sidebar.radio("Go to", list(PAGES), label_visibility="collapsed", key="page")
-st.sidebar.markdown(f'<div class="sidefoot">📅 Data up to <b>{fmt_date(LAST_WEEK)}</b><br>'
-                    f'🔮 Forecast for <b>{fmt_date(TARGET_WEEK)}</b><br>🤖 Model: <b>{DEPLOYED}</b></div>',
+st.sidebar.markdown(f'<div class="sidefoot">Data up to <b>{fmt_date(LAST_WEEK)}</b><br>'
+                    f'Forecast for <b>{fmt_date(TARGET_WEEK)}</b><br>Model: <b>{DEPLOYED}</b></div>',
                     unsafe_allow_html=True)
 PAGES[page]()
