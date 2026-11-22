@@ -124,7 +124,8 @@ def split_panel(panel: pd.DataFrame) -> dict[str, pd.DataFrame]:
     forecast = panel[panel["origin_date"] == last_date].copy()
 
     usable = panel[(panel["history_weeks"] > WARMUP_WEEKS) & panel["target"].notna()]
-    recent = np.sort(usable["target_date"].unique())[-EXCLUDE_LAST_N_WEEKS:]
+    # the most recent target weeks by CALENDAR (whether or not they were reported reliably)
+    recent = np.sort(panel.loc[panel["origin_date"] < last_date, "target_date"].unique())[-EXCLUDE_LAST_N_WEEKS:]
     return {
         "train": usable[usable["year"] <= TRAIN_END_YEAR].copy(),
         "val": usable[usable["year"] == VAL_YEAR].copy(),

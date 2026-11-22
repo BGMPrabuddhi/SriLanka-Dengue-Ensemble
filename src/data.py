@@ -98,7 +98,8 @@ def flag_missing_reports(df: pd.DataFrame) -> pd.DataFrame:
          dengue does not vanish for exactly one week).
       4. scrambled  - a week in which >= 4 regions jump to > 4x BOTH neighbouring weeks (and >= 30
          cases) while big regions collapse; the counts were assigned to the wrong regions in the
-         source (30 Mar 2026, 8 Jun 2026). The whole week is unreliable, so every region is flagged.
+         source (30 Mar 2026, 8 Jun 2026, and the latest week, 7 Sep 2026, checked against the
+         previous week only). The whole week is unreliable, so every region is flagged.
       5. duplicate  - every region's count is identical to the previous week (a copied report:
          21 Jan 2012, 18 Dec 2021, 8 Feb 2025, 22 Jun 2026); the copy is flagged.
     Flagged rows get cases = NaN, missing_report = True and a missing_reason. We do NOT impute or
@@ -121,6 +122,15 @@ def flag_missing_reports(df: pd.DataFrame) -> pd.DataFrame:
     dropout = (wide == 0) & (prev >= DROPOUT_MIN_NEIGHBOUR) & (nxt >= DROPOUT_MIN_NEIGHBOUR)
     inflated = (wide >= SCRAMBLE_MIN_CASES) & (wide > 4 * np.maximum(prev, nxt))
     scrambled_dates = wide.index[inflated.sum(axis=1) >= SCRAMBLE_MIN_REGIONS]
+    # The latest week has no following week, so the two-sided check above cannot see it. For that week only,
+    # require BOTH signs against the previous week: >= 4 regions spike (> 4x, >= 30 cases) AND >= 3 large regions
+    # (>= 20 cases) collapse below a quarter. Over 2007-2025 this combination never occurs; it only appears in the
+    # scrambled 2026 weeks (and the week after each), so it does not fire on genuine outbreak starts.
+    last, before = wide.iloc[-1], wide.iloc[-2]
+    spikes = ((last >= SCRAMBLE_MIN_CASES) & (last > 4 * before)).sum()
+    collapses = ((before >= 20) & (last < before / 4)).sum()
+    if spikes >= SCRAMBLE_MIN_REGIONS and collapses >= 3 and wide.index[-2] not in scrambled_dates:
+        scrambled_dates = scrambled_dates.append(wide.index[-1:])
     duplicate_dates = wide.index[(wide.diff().abs().sum(axis=1) == 0) & (wide.index > wide.index[0])]
 
     long_dropout = dropout.stack().rename("d").reset_index()
